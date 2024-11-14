@@ -96,13 +96,13 @@ class ImageExtraService:
             {"_id": ObjectId(metadata_id)},
             {
                 "$pull": {
-                    "aiResults.0.predictions.0.tags": {"$in": request.delete_tag_list}
+                    "aiResults.0.predictions.0.tags": {"$in": request.remove_tag_list}
                 }
             }
         )
 
         # tagImages
-        for tag in request.delete_tag_list:
+        for tag in request.remove_tag_list:
             await collection_tag_images.update_one(
                 {},
                 {
