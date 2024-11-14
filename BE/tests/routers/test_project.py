@@ -94,7 +94,6 @@ async def test_get_project_list(auth_headers):
             headers=auth_headers
         )
 
-    print(response.json())
     
     assert response.status_code == 200
     assert response.json()["status"] == 200
@@ -103,13 +102,14 @@ async def test_get_project_list(auth_headers):
 # 3. 프로젝트 삭제 테스트
 @pytest.mark.asyncio
 async def test_delete_project():
-    session = mongo_client.start_session()
+    session = await mongo_client.start_session()
     session.start_transaction()
 
     # 삭제할 프로젝트 ID가 1이라고 가정
     response = client.delete("be/api/project/1",headers=auth_headers)
 
-    session.abort_transaction()
+    await session.abort_transaction()
+
 
     assert response.status_code == 200
     assert response.json()["status"] == 200
