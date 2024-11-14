@@ -310,29 +310,33 @@ class JWTManage:
                 status_code=500,
                 detail=f"Redis 연결 실패: {str(e)}"
             )
+    def get_utc_timestamp(self):
+        return datetime.now().timestamp()
     
     def create_access_token(self, user: Users) -> str:
+        current_time = self.get_utc_timestamp()
         data = {
             "user_id": user.user_id,
             "email": user.email,
             "token_type": "access",
-            "exp": get_current_time() + timedelta(minutes=self.access_token_expire_minutes),
-            "iat": get_current_time()
+            "exp": current_time + timedelta(minutes=self.access_token_expire_minutes),
+            "iat": current_time
         }
         return jwt.encode(data, self.secret_key, algorithm=self.algorithm)
     
     def create_refresh_token(self, user_id: int) -> str:
+        current_time = self.get_utc_timestamp()
         data = {
             "user_id": user_id,
             "token_type": "refresh",
-            "exp": get_current_time() + timedelta(days=self.refresh_token_expire_days),
-            "iat": get_current_time()
+            "exp": current_time + timedelta(days=self.refresh_token_expire_days),
+            "iat": current_time
         }
         return jwt.encode(data, self.secret_key, algorithm=self.algorithm)
         
     def verify_token(self, token: str):
         try:
-            if self.redis_client and self.redis_client.get(f"bl_access_token:{token}"):
+            if self.redis_client and self.redis_client.get(f"logout:{token}"):
                 raise HTTPException(status_code=401, detail="이미 로그아웃된 토큰입니다.")
             
             payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
@@ -400,8 +404,8 @@ class UserLogout:
         
     async def logout(self, access_token: str):
         try:
-            if self.redis_client.get(f"bl_access_token:{access_token}"):
-                raise HTTPException(status_code=400, detail="이미 로그아웃된 토큰입니다.")
+            if self.redis_client.exists(f"logout:{access_token}"):
+                raise HTTPException(status_code=401, detail="이미 로그아웃된 토큰입니다.")
             
             jwt_manager = JWTManage(self.db)
             payload = jwt_manager.verify_token(access_token)
@@ -411,10 +415,10 @@ class UserLogout:
                 raise HTTPException(status_code=400, detail="JWT 토큰 구조가 옳지 않습니다.")
             
             current_timestamp = datetime.now().timestamp()
-            ttl = int(expire_timestamp - current_timestamp)
+            ttl = max(1, int(expire_timestamp - current_timestamp))
             
             if ttl > 0:
-                self.redis_client.setex(f"bl_access_token:{access_token}", ttl, 1)
+                self.redis_client.setex(f"logout:{access_token}", ttl, 1)
             
             return {"message": "로그아웃 되었습니다"}
         
