@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-SQLALCHEMY_DATABASE_URL = f"mysql+pymysql://{os.getenv('MARIA_USER')}@{os.getenv('MARIA_HOST')}:{os.getenv('MARIA_PASSWORD')}@{os.getenv('MARIA_HOST')}:{int(os.getenv('MARIA_PORT'))}/{os.getenv('MARIA_DATABASE')}?charset=utf8"
+SQLALCHEMY_DATABASE_URL = f"mysql+pymysql://{os.getenv('MARIA_USER')}:{os.getenv('MARIA_PASSWORD')}@{os.getenv('MARIA_HOST')}:{int(os.getenv('MARIA_PORT'))}/{os.getenv('MARIA_DATABASE')}?charset=utf8"
 
 engine = create_engine(
         SQLALCHEMY_DATABASE_URL,

@@ -54,7 +54,7 @@ async def test_create_project(auth_headers, mongodb):
     data = {
             "user_id": 1,
             "project_name": "New Project",
-            "model_name": "vgg19_bn",
+            "model_name": "efficientnet_v2_s",
             "description": "This is a description of the new project.",
             "accesscontrol": {
                 "view_users": ["user1", "user2", "user3"],
