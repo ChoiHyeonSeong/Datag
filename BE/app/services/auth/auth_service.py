@@ -310,27 +310,27 @@ class JWTManage:
                 status_code=500,
                 detail=f"Redis 연결 실패: {str(e)}"
             )
-    def get_utc_timestamp(self):
-        return datetime.now().timestamp()
     
     def create_access_token(self, user: Users) -> str:
-        current_time = self.get_utc_timestamp()
+        current_time = datetime.now()
+        expire_time = current_time + timedelta(minutes=self.access_token_expire_minutes)
         data = {
             "user_id": user.user_id,
             "email": user.email,
             "token_type": "access",
-            "exp": current_time + timedelta(minutes=self.access_token_expire_minutes),
-            "iat": current_time
+            "exp": int(expire_time.timestamp()),
+            "iat": int(current_time.timestamp())
         }
         return jwt.encode(data, self.secret_key, algorithm=self.algorithm)
     
     def create_refresh_token(self, user_id: int) -> str:
-        current_time = self.get_utc_timestamp()
+        current_time = datetime.now()
+        expire_time = current_time + timedelta(minutes=self.access_token_expire_minutes)
         data = {
             "user_id": user_id,
             "token_type": "refresh",
-            "exp": current_time + timedelta(days=self.refresh_token_expire_days),
-            "iat": current_time
+            "exp": int(expire_time.timestamp()),
+            "iat": int(current_time.timestamp())
         }
         return jwt.encode(data, self.secret_key, algorithm=self.algorithm)
         
@@ -414,7 +414,7 @@ class UserLogout:
             if not expire_timestamp:
                 raise HTTPException(status_code=400, detail="JWT 토큰 구조가 옳지 않습니다.")
             
-            current_timestamp = datetime.now().timestamp()
+            current_timestamp = int(datetime.now()).timestamp()
             ttl = max(1, int(expire_timestamp - current_timestamp))
             
             if ttl > 0:
