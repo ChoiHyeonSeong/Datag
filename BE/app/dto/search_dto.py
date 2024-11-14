@@ -46,4 +46,22 @@ class SearchRequest(BaseModel):
                 ]
             }
         }
+        
+class SearchProjectImageRequest(BaseModel):
+    conditions: List[SearchCondition] | None = None
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "project_id": "1234567890abcdef12345678",
+                "image_id": "abcdef1234567890abcdef12",
+                "conditions": [
+                    {
+                        "and_condition": ["cat", "Seoul"],
+                        "or_condition": ["2024_11"],
+                        "not_condition": ["Zone A"]
+                    }
+                ]
+            }
+        }
 

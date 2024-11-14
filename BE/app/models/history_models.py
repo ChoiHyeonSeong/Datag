@@ -9,6 +9,7 @@ class Parameters(BaseModel):
 
 class ReductionResults(BaseModel):
     imageId: str
+    detailId: str
     imageUrl: str
     features: List[float] | None = None
     predictions: Any

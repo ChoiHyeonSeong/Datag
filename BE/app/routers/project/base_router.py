@@ -144,12 +144,11 @@ async def image_upload(
         upload = UploadService(db)
         file_contents = []
 
-        # 모든 파일의 내용을 먼저 읽어 메모리에 저장
-        for file in files:
-            content = await file.read()
-            file_contents.append((file.filename, content))
-
         if files:
+            # 모든 파일의 내용을 먼저 읽어 메모리에 저장
+            for file in files:
+                content = await file.read()
+                file_contents.append((file.filename, content))
             background_tasks.add_task(upload.upload_image, upload_request_obj, file_contents, user_id)
 
         return CommonResponse(

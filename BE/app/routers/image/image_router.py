@@ -8,7 +8,7 @@ from configs.mariadb import get_database_mariadb
 from services.auth.auth_service import JWTManage
 from services.image.image_service import ImageService
 from services.image.download_service import DownloadService
-from dto.search_dto import SearchRequest, ImageSearchResponse, SearchCondition
+from dto.search_dto import SearchRequest, ImageSearchResponse, SearchProjectImageRequest
 from dto.download_dto import DownloadRequest
 from dto.pagination_dto import PaginationDto
 
@@ -17,15 +17,17 @@ security_scheme = HTTPBearer()
 router = APIRouter(prefix="/image", tags=["Image"])
 
 # 1. 이미지 정보 조회
-@router.get('/detail/{image_id}', description="이미지 정보 조회")
+@router.post('/detail/{project_id}/{image_id}', description="이미지 정보 조회")
 async def get_image_detail(
+    project_id: str,
     image_id: str,
+    request : SearchProjectImageRequest = Body(default=None),
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
     db: Session = Depends(get_database_mariadb)
 ):
     try:
         image_service = ImageService(db)
-        response = await image_service.read_image_detail(image_id)
+        response = await image_service.read_image_detail(project_id, image_id, request.conditions)
 
         return CommonResponse(
             status=200,
@@ -33,8 +35,8 @@ async def get_image_detail(
         )
     except HTTPException as http_exc:
         raise http_exc
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    # except Exception as e:
+    #     raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/download")

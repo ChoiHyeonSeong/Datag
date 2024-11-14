@@ -50,6 +50,7 @@ class AnalysisService:
                     
                     # Ground Truth (label_info)와 Predictions 매핑
                     if label_info:
+                        detail_count = 0
                         for pred_idx, prediction in enumerate(predictions["detections"]):
                             max_iou = 0
                             best_match_idx = None
@@ -73,6 +74,7 @@ class AnalysisService:
                                 
                                 concat_image_infos.append({
                                     "imageId": request.image_ids[i],
+                                    "detailId": request.image_ids[i] + "_" + str(detail_count),
                                     "predictions": prediction,
                                     "label": label_dict,  # label 가져오기
                                     "iou": max_iou,
@@ -82,11 +84,13 @@ class AnalysisService:
                                 # IoU가 기준보다 낮은 경우
                                 concat_image_infos.append({
                                     "imageId": request.image_ids[i],
+                                    "detailId": request.image_ids[i] + "_" + str(detail_count),
                                     "predictions": prediction,
                                     "label": None,
                                     "iou": None,
                                     "imageUrl": image_metadata["fileList"][0],
-                                })
+                                })  
+                            detail_count += 1
                         
                         # 남은 label 처리
                         for label_idx, label_box in enumerate(label_info["bounding_boxes"]):
@@ -99,23 +103,29 @@ class AnalysisService:
                                 
                                 concat_image_infos.append({
                                     "imageId": request.image_ids[i],
+                                    "detailId": request.image_ids[i] + "_" + str(detail_count),
                                     "predictions": None,
                                     "label": label_dict,
                                     "iou": None,
                                     "imageUrl": image_metadata["fileList"][0],
                                 })
+                                detail_count += 1
                     else:
+                        detail_count = 0
                         for pred_idx, prediction in enumerate(predictions["detections"]):
                             concat_image_infos.append({
                                 "imageId": request.image_ids[i],
+                                "detailId": request.image_ids[i] + "_" + str(detail_count),
                                 "predictions": prediction,
                                 "label": None,
                                 "iou": None,
                                 "imageUrl": image_metadata["fileList"][0],
                             })
+                            detail_count += 1
                 else:
                     concat_image_infos.append({
                         "imageId": request.image_ids[i],
+                        "detailId": request.image_ids[i] + "_0",
                         "predictions": {
                             "prediction": predictions["prediction"],
                             "confidence": predictions["confidence"]
@@ -217,6 +227,7 @@ class AnalysisService:
                     
                     # Ground Truth (label_info)와 Predictions 매핑
                     if label_info:
+                        detail_count = 0
                         for pred_idx, prediction in enumerate(predictions["detections"]):
                             max_iou = 0
                             best_match_idx = None
@@ -240,6 +251,7 @@ class AnalysisService:
                                 
                                 concat_image_infos.append({
                                     "imageId": final_matching_ids[i],
+                                    "detailId": final_matching_ids[i] + "_" + str(detail_count),
                                     "predictions": prediction,
                                     "label": label_dict,  # label 가져오기
                                     "iou": max_iou,
@@ -249,11 +261,13 @@ class AnalysisService:
                                 # IoU가 기준보다 낮은 경우
                                 concat_image_infos.append({
                                     "imageId": final_matching_ids[i],
+                                    "detailId": final_matching_ids[i] + "_" + str(detail_count),
                                     "predictions": prediction,
                                     "label": None,
                                     "iou": None,
                                     "imageUrl": image_metadata["fileList"][0],
                                 })
+                            detail_count += 1
                         
                         # 남은 label 처리
                         for label_idx, label_box in enumerate(label_info["bounding_boxes"]):
@@ -266,23 +280,29 @@ class AnalysisService:
                                 
                                 concat_image_infos.append({
                                     "imageId": final_matching_ids[i],
+                                    "detailId": final_matching_ids[i] + "_" + str(detail_count),
                                     "predictions": None,
                                     "label": label_dict,
                                     "iou": None,
                                     "imageUrl": image_metadata["fileList"][0],
                                 })
+                                detail_count += 1
                     else:
+                        detail_count = 0
                         for pred_idx, prediction in enumerate(predictions["detections"]):
                             concat_image_infos.append({
                                 "imageId": final_matching_ids[i],
+                                "detailId": final_matching_ids[i] + "_" + str(detail_count),
                                 "predictions": prediction,
                                 "label": None,
                                 "iou": None,
                                 "imageUrl": image_metadata["fileList"][0],
                             })
+                            detail_count += 1
                 else:
                     concat_image_infos.append({
                         "imageId": final_matching_ids[i],
+                        "detailId": final_matching_ids[i] + "_0",
                         "predictions": {
                             "prediction": predictions["prediction"],
                             "confidence": predictions["confidence"]

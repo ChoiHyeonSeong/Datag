@@ -1,18 +1,24 @@
 from fastapi import HTTPException
 from typing import List, Set
-from dto.search_dto import TagImageResponse, SearchCondition, ImageSearchResponse, SearchRequest
+
+from math import ceil
+from bson import ObjectId
+from sqlalchemy.orm import Session
+from dotenv import load_dotenv
+
+from dto.search_dto import TagImageResponse, SearchCondition, ImageSearchResponse, SearchProjectImageRequest
+from dto.image_detail_dto import UserInformation, AccessControl, ImageDetailResponse
 from dto.pagination_dto import PaginationDto
+from models.mariadb_users import Users, Departments
 from configs.mongodb import (
     collection_tag_images, 
     collection_metadata, 
     collection_images,
-    collection_image_permissions, 
+    collection_image_permissions,
+    collection_project_images
 )
-from bson import ObjectId
-from models.mariadb_users import Users, Departments
-from sqlalchemy.orm import Session
-from dotenv import load_dotenv
-from dto.image_detail_dto import UserInformation, AccessControl, ImageDetailResponse
+
+
 
 load_dotenv()
 
@@ -205,7 +211,12 @@ class ImageService:
             )
     
     # 1. 이미지 정보 가져오기
-    async def read_image_detail(self, image_id: str) -> ImageDetailResponse:
+    async def read_image_detail(
+    self,
+    project_id: str,
+    image_id: str,
+    search_conditions: List[SearchCondition] | None
+) -> ImageDetailResponse:
 
         # images, metadata
         image_one = await collection_images.find_one({"_id": ObjectId(image_id)})
@@ -218,7 +229,6 @@ class ImageService:
         if metadata_one is None:
             raise HTTPException(status_code=404, detail="Metadata not found")
         metadata_one["_id"] = str(metadata_one["_id"])
-        ###
 
         # users, accessControl
         access_control_one = metadata_one.get("metadata").get("accessControl")
@@ -247,12 +257,61 @@ class ImageService:
             users=user_list,
             departments=departments
         )
+        
+        project = await collection_project_images.find_one({"project." + project_id: {"$exists": True}})
+        if project is None:
+            raise HTTPException(status_code=404, detail="Project not found")
+        
+        # 프로젝트의 image 목록 가져오기
+        images = project.get("project", {}).get(project_id, [])
+        
+        if search_conditions:
+            tag_doc = await collection_tag_images.find_one({})
+            final_matching_ids = set()
+            for condition in search_conditions:
+                group_result = await self._process_condition_group(tag_doc, condition)
+                final_matching_ids.update(group_result)
+
+            images = list(set(images) & final_matching_ids)
+
+        
+        if not images:
+            raise HTTPException(status_code=404, detail="No images found for this project")
+
+        total_pages = len(images)
+        start_index = 0
+
+        # image_id가 제공된 경우 start_index 설정
+        if image_id:
+            try:
+                start_index = images.index(image_id)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid image_id")
+
+        next_cursor = None
+        previous_cursor = None
+
+        current_page = start_index + 1
+        
+        # next_cursor 설정
+        if len(images) > current_page:
+            next_cursor = images[current_page]
+
+        # previous_cursor 설정
+        if start_index > 0:
+            previous_cursor = images[max(0, start_index - 1)]
 
         # result
         try:
             return {
                 "metadata": metadata_one,
-                "access_control": access_control
+                "access_control": access_control,
+                "pagination": {
+                    "previous_cursor": previous_cursor,
+                    "next_cursor": next_cursor,
+                    "current_page": current_page,
+                    "total_pages": total_pages
+                }
             }
         except Exception as e:
             raise HTTPException(

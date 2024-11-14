@@ -13,13 +13,7 @@ services:
     networks:
       - be-redis
     healthcheck:
-      test:
-        [
-          "CMD",
-          "curl",
-          "-f",
-          "http://${EC2_HOST}}:${HEALTH_CHECK_PORT:-8000}${HEALTH_CHECK_PATH:-/health}",
-        ]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/be/health"]
       interval: 30s
       timeout: 10s
       retries: 3

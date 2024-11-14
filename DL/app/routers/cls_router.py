@@ -17,7 +17,7 @@ async def classify_objects(
     request: AIModelRequest,
     db : Session = Depends(get_database_mariadb)
 ):
-    try:
+    # try:
         classification_service = ClassificationService(db)
         await classification_service.classify_images(request)
         return CommonResponse[str](
@@ -25,7 +25,7 @@ async def classify_objects(
             data="success"
         )
     
-    except HTTPException as http_exc:
-        raise http_exc
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    # except HTTPException as http_exc:
+    #     raise http_exc
+    # # except Exception as e:
+    #     raise HTTPException(status_code=400, detail=str(e))

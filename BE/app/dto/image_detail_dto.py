@@ -11,9 +11,16 @@ class AccessControl(BaseModel):
     users: List[UserInformation]
     departments: List[str]
 
+class Pagination(BaseModel):
+    previous_cursor: str | None = None
+    next_cursor: str | None = None
+    current_page: int
+    total_pages: int
+    
 class ImageDetailResponse(BaseModel):
     metadata: Metadata
     access_control: AccessControl
+    pagination: Pagination
 
 class ImageDetailTagAddRequest(BaseModel):
     image_id: str
