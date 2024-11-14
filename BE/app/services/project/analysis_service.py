@@ -30,6 +30,9 @@ class AnalysisService:
                 request.selected_tags,
             )
 
+            if len(request.image_ids) < 10:
+                raise Exception(f"Dimension reduction failed")
+
             await self._mapping_project_histories_mongodb(request.project_id, inserted_id)
 
             # image_ids로 이미지 정보들 가져오기
@@ -170,6 +173,17 @@ class AnalysisService:
     async def auto_dimension_reduction(self, request: AutoDimensionReductionRequest, user_id: int) -> DimensionReductionResponse:
         inserted_id = None
         try:
+            inserted_id = await self._save_history_mongodb(
+                user_id,
+                request.project_id,
+                request.is_private,
+                request.history_name,
+                request.algorithm,
+                request.selected_tags,
+            )
+
+            await self._mapping_project_histories_mongodb(request.project_id, inserted_id)
+            
             project_images = await collection_project_images.find_one({})
             if not project_images or "project" not in project_images:
                 raise Exception(f"Dimension reduction failed")
@@ -193,21 +207,8 @@ class AnalysisService:
             
             final_matching_ids = list(final_matching_ids)
             
-            print(final_matching_ids)
-            
             if len(final_matching_ids) < 10:
                 raise Exception(f"Dimension reduction failed")
-            
-            inserted_id = await self._save_history_mongodb(
-                user_id,
-                request.project_id,
-                request.is_private,
-                request.history_name,
-                request.algorithm,
-                request.selected_tags,
-            )
-
-            await self._mapping_project_histories_mongodb(request.project_id, inserted_id)
 
             # image_ids로 이미지 정보들 가져오기
             image_features = await self._get_image_features(final_matching_ids)

@@ -21,9 +21,6 @@ async def dimension_reduction_umap(
     db: Session = Depends(get_database_mariadb)
 ):
     try:
-        if len(request.image_ids) < 10:
-            raise HTTPException(status_code=400, detail="이미지 개수가 부족합니다. (최소 10개)")
-
         access_token = credentials.credentials
         jwt = JWTManage(db)
         user_id = jwt.verify_token(access_token)["user_id"]

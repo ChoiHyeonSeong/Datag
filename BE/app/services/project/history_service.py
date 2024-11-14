@@ -52,7 +52,7 @@ class HistoryService:
             total_histories = await collection_histories.count_documents(base_query)
             total_pages = (total_histories + limit - 1) // limit
 
-            histories = await collection_histories.find(base_query).skip(skip).limit(limit).to_list(length=limit)
+            histories = await collection_histories.find(base_query).sort('createdAt', -1).skip(skip).limit(limit).to_list(length=limit)
 
             return_value = [
                 HistoryListData(
