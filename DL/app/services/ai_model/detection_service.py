@@ -45,9 +45,11 @@ class ObjectDetectionService:
 
                 image_data = self.preprocess_service.load_image_from_s3(url)
                 image_data = Image.open(BytesIO(image_data))
+                org_width, org_height = image_data.size
+
                 image_tensor = self.preprocess_service.process_image(image_data, (640, 640))
 
-                model_prediction_result = self._predict_model_YOLO(model, request.model_name, image_tensor)
+                model_prediction_result = self._predict_model_YOLO(model, request.model_name, image_tensor, org_width, org_height)
 
                 if model_prediction_result is None:
                     continue
@@ -104,7 +106,7 @@ class ObjectDetectionService:
         return model
 
     # 모델 예측
-    def _predict_model_YOLO(self, model: YOLOMODEL, model_name: str, image_tensor: torch.Tensor) -> ObjectDetectionPredictionResult:
+    def _predict_model_YOLO(self, model: YOLOMODEL, model_name: str, image_tensor: torch.Tensor, orig_img_width: int, orig_img_height: int) -> ObjectDetectionPredictionResult:
         labels = []
         confidences = []
         features = []
@@ -120,23 +122,15 @@ class ObjectDetectionService:
 
             boxes = results.boxes
             orig_img = results.orig_img
-            orig_img_height, orig_img_width = orig_img.shape[:2]
 
             class_names = results.names
 
             for box in boxes:
                 x1, y1, x2, y2 = box.xyxy[0]
                 x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
-                
-                input_img_width, input_img_height = image_tensor.shape[3], image_tensor.shape[2]
-                x1 = int(x1 * (orig_img_width / input_img_width))
-                y1 = int(y1 * (orig_img_height / input_img_height))
-                x2 = int(x2 * (orig_img_width / input_img_width))
-                y2 = int(y2 * (orig_img_height / input_img_height))
-            
+
                 cls = int(box.cls)
                 class_name = class_names[cls] if cls in class_names else f"Class {cls}"
-                
                 if class_name not in ["bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe"]:
                     continue
 
@@ -149,6 +143,12 @@ class ObjectDetectionService:
                 image_converted = Image.fromarray(cropped_obj)
 
                 input_data = self.preprocess_service.process_image(image_converted, (640, 640))
+                
+                input_img_width, input_img_height = image_tensor.shape[3], image_tensor.shape[2]
+                x1 = int(x1 * (orig_img_width / input_img_width))
+                y1 = int(y1 * (orig_img_height / input_img_height))
+                x2 = int(x2 * (orig_img_width / input_img_width))
+                y2 = int(y2 * (orig_img_height / input_img_height))
 
                 output = model(input_data)
                 

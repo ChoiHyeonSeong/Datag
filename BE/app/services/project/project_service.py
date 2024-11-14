@@ -458,7 +458,7 @@ class ProjectService:
     # 3. 모델 리스트 호출
     async def get_model_list(self):
         model_list = {
-            "cls": ["vgg19_bn", "mobilenetv2_x1_4", "repvgg_a2"],
+            "cls": ["efficientnet_v2_s", "convnext_base", "regnet_y_3_2gf"],
             "det": ["yolov5n", "yolov8n", "yolo11n"]
         }
         
