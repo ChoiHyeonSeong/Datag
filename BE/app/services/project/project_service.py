@@ -537,7 +537,7 @@ class ProjectService:
 
             # 필터링된 이미지를 project에 저장
             for image_id in filtered_images:
-                await collection_tag_images.update_one(
+                await collection_project_images.update_one(
                     {},
                     {
                         "$addToSet": {
