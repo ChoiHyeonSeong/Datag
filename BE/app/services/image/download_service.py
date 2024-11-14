@@ -96,6 +96,8 @@ class DownloadService:
                     "Content-Disposition": f"attachment; filename={zipfile_name}.zip"
                 }
             )
+        except HTTPException as http_exc:
+            raise http_exc
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
                     
