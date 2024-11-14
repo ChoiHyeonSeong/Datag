@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from typing import List
 import torch
 import torch.nn as nn
+from torchvision import models
 from PIL import Image
 from PIL.Image import Image as PILImage
 from io import BytesIO
@@ -15,26 +16,37 @@ from services.mongodb.classification_metadata_service import ClassificationMetad
 from services.mongodb.image_service import ImageService
 from sqlalchemy.orm import Session
 
-CIFAR10_CLASSES = ['plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
+OXFORDIIITPET_CLASSES = [
+    # Cats
+    "Abyssinian", "Bengal", "Birman", "Bombay", "British Shorthair", "Egyptian Mau",
+    "Maine Coon", "Persian", "Ragdoll", "Russian Blue", "Siamese", "Sphynx",
+
+    # Dogs
+    "American Bulldog", "American Pit Bull Terrier", "Basset Hound", "Beagle", "Boxer",
+    "Chihuahua", "English Cocker Spaniel", "English Setter", "German Shorthaired Pointer",
+    "Great Pyrenees", "Havanese", "Japanese Chin", "Keeshond", "Leonberger", "Miniature Pinscher",
+    "Newfoundland", "Pomeranian", "Pug", "Saint Bernard", "Samoyed", "Scottish Terrier",
+    "Shiba Inu", "Staffordshire Bull Terrier", "Wheaten Terrier", "Yorkshire Terrier"
+]
 
 class ClassificationService:
     def __init__(self, db: Session):
         self.preprocess_service = PreprocessService()
         self.classification_metadata_service = ClassificationMetadataService()
         self.image_service = ImageService()
-        self.model_list = ["vgg19_bn", "mobilenetv2_x1_4", "repvgg_a2"]
+        self.model_list = ["efficientnet_v2_s", "convnext_base", "regnet_y_3_2gf"]
         self.features = None
         self.conf_threshold = 0.7
 
     async def classify_images(self, request: AIModelRequest):
         try:
             # 모델리스트에 없으면 에러
-            if request.model_name == "vgg19_bn":
-                model = self._set_model_vgg19_bn(request.model_name)
-            elif request.model_name == "mobilenetv2_x1_4":
-                model = self._set_model_mobilenetv2_x1_4(request.model_name)
-            elif request.model_name == "repvgg_a2":
-                model = self._set_model_repvgg_a2(request.model_name)
+            if request.model_name == "efficientnet_v2_s":
+                model = self._set_model_efficientnet_v2_s()
+            elif request.model_name == "convnext_base":
+                model = self._set_model_convnext_base()
+            elif request.model_name == "regnet_y_3_2gf":
+                model = self._set_model_regnet_y_3_2gf()
             else:
                 raise HTTPException(
                     status_code=400, 
@@ -93,9 +105,13 @@ class ClassificationService:
                 detail=f"Detection failed: {str(e)}"
             )
 
-    # 모델 정의
-    def _set_model_vgg19_bn(self, model_name: str) -> torch.nn.Module:
-        model = torch.hub.load("chenyaofo/pytorch-cifar-models", f"cifar10_{model_name}", pretrained=True)
+    # 모델 정의(EfficientNetV2)
+    def _set_model_efficientnet_v2_s(self) -> torch.nn.Module:
+        model = models.efficientnet_v2_s(weights =models.EfficientNet_V2_S_Weights.DEFAULT)
+        model.classifier[1] = torch.nn.Linear(model.classifier[1].in_features, 37)
+        model_path = "best_pet_EfficientNetV2.pth"
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        model.load_state_dict(torch.load(model_path, map_location=torch.device(device)))
         model.verbose = False
 
         def hook_fn(module, input, output):
@@ -104,9 +120,17 @@ class ClassificationService:
         model.features[-1].register_forward_hook(hook_fn)
         return model
 
-    # 모델 정의
-    def _set_model_mobilenetv2_x1_4(self, model_name: str) -> torch.nn.Module:
-        model = torch.hub.load("chenyaofo/pytorch-cifar-models", f"cifar10_{model_name}", pretrained=True)
+    # 모델 정의(ConvNeXt)
+    def _set_model_convnext_base(self) -> torch.nn.Module:
+        model = models.convnext_base(weights =models.ConvNeXt_Base_Weights.DEFAULT)
+        model.classifier = torch.nn.Sequential(
+            model.classifier[0], 
+            model.classifier[1], 
+            torch.nn.Linear(model.classifier[2].in_features, 37) 
+        )
+        model_path = "best_pet_ConvNeXt.pth"
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        model.load_state_dict(torch.load(model_path, map_location=torch.device(device)))
         model.verbose = False
 
         def hook_fn(module, input, output):
@@ -115,15 +139,20 @@ class ClassificationService:
         model.features[-1].register_forward_hook(hook_fn)
         return model
 
-    # 모델 정의
-    def _set_model_repvgg_a2(self, model_name: str) -> torch.nn.Module:
-        model = torch.hub.load("chenyaofo/pytorch-cifar-models", f"cifar10_{model_name}", pretrained=True)
+    # 모델 정의(RegNet)
+    def _set_model_regnet_y_3_2gf(self) -> torch.nn.Module:
+        model = models.regnet_y_3_2gf(weights =models.RegNet_Y_3_2GF_Weights.DEFAULT)
+        num_ftrs = model.fc.in_features
+        model.fc = torch.nn.Linear(num_ftrs, 37)
+        model_path = "best_pet_RegNet.pth"
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        model.load_state_dict(torch.load(model_path, map_location=torch.device(device)))
         model.verbose = False
 
         def hook_fn(module, input, output):
             self.features = output
 
-        model.gap.register_forward_hook(hook_fn)
+        model.avgpool.register_forward_hook(hook_fn)
         return model
 
     # 모델 예측
@@ -148,7 +177,7 @@ class ClassificationService:
 
             model_results = {
                 "used_model": model_name,
-                "predict_class": CIFAR10_CLASSES[int(predicted_class.item())],
+                "predict_class": OXFORDIIITPET_CLASSES[int(predicted_class.item())],
                 "predict_confidence": float(conf.item()) * 0.1,
                 "features": self.features.view(self.features.size(0), -1).tolist(),
                 "elapsed_time": elapsed_time
