@@ -321,9 +321,14 @@ class ProjectService:
             for tag in condition.and_condition:
                 if tag in tag_doc['tag']:
                     current_ids = set(tag_doc['tag'][tag])
-                    result_ids = current_ids if result_ids is None else result_ids & current_ids
+                    if result_ids is None:
+                        result_ids = current_ids
+                    else:
+                        result_ids &= current_ids
                 else:
                     return set()  # AND 조건 중 하나라도 매칭되지 않으면 빈 set 반환
+            if result_ids is None:
+                return set()
 
         # OR 조건 처리
         if condition.or_condition:
