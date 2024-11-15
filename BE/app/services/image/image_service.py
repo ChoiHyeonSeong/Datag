@@ -10,13 +10,6 @@ from dto.search_dto import TagImageResponse, SearchCondition, ImageSearchRespons
 from dto.image_detail_dto import UserInformation, AccessControl, ImageDetailResponse
 from dto.pagination_dto import PaginationDto
 from models.mariadb_users import Users, Departments
-from configs.mongodb import (
-    collection_tag_images, 
-    collection_metadata, 
-    collection_images,
-    collection_image_permissions,
-    collection_project_images
-)
 
 
 
@@ -24,12 +17,16 @@ load_dotenv()
 
 ## 1. tag 목록 불러오기
 class ImageService:    
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, mongodb: Session):
         self.db = db
+        self.collection_tag_images = mongodb.get_collection("tagImages")
+        self.collection_metadata = mongodb.get_collection("metadata")
+        self.collection_images = mongodb.get_collection("images")
+        self.collection_image_permissions = mongodb.get_collection("imagePermissions")
     
     async def get_tag(self) -> TagImageResponse:
         try:
-            tag_doc = await collection_tag_images.find_one({})
+            tag_doc = await self.collection_tag_images.find_one({})
             if not tag_doc:
                 tags = []
             else:
@@ -59,7 +56,7 @@ class ImageService:
             ).first()
             department_name = department.department_name if department else None
 
-            permissions = await collection_image_permissions.find_one({})
+            permissions = await self.collection_image_permissions.find_one({})
             if not permissions:
                 return set()
 
@@ -129,7 +126,7 @@ class ImageService:
     async def search_images_by_conditions(self, search_conditions: List[SearchCondition] | None, user_id: int, page: int = 1, limit: int = 10) -> PaginationDto[List[ImageSearchResponse]]:
         try:
             # 1. tag document 가져오기
-            tag_doc = await collection_tag_images.find_one({})
+            tag_doc = await self.collection_tag_images.find_one({})
             if not tag_doc:
                 return {
                     "data": [],
@@ -178,17 +175,17 @@ class ImageService:
             
             # 전체 개수 조회
             base_query = {"_id": {"$in": object_ids}}
-            total_count = await collection_images.count_documents(base_query)
+            total_count = await self.collection_images.count_documents(base_query)
             total_pages = (total_count + limit - 1) // limit
 
             # 페이지네이션을 위한 정렬 추가
             skip = (page - 1) * limit
-            paginated_images = await collection_images.find(base_query).sort('createdAt', 1).skip(skip).limit(limit).to_list(length=None)
+            paginated_images = await self.collection_images.find(base_query).sort('createdAt', 1).skip(skip).limit(limit).to_list(length=None)
 
 
             # 매칭된 이미지 정보 조회
             metadata_ids = [ObjectId(image["metadataId"]) for image in paginated_images]
-            metadata_docs = await collection_metadata.find(
+            metadata_docs = await self.collection_metadata.find(
                 {"_id": {"$in": metadata_ids}},
                 {"fileList": 1}
             ).to_list(length=None)
@@ -223,13 +220,13 @@ class ImageService:
 ) -> ImageDetailResponse:
 
         # images, metadata
-        image_one = await collection_images.find_one({"_id": ObjectId(image_id)})
+        image_one = await self.collection_images.find_one({"_id": ObjectId(image_id)})
         if image_one is None:
             raise HTTPException(status_code=404, detail="Image not found")
         image_one["_id"] = str(image_one["_id"])
 
         metadata_id = image_one.get("metadataId")
-        metadata_one = await collection_metadata.find_one({"_id": ObjectId(metadata_id)})
+        metadata_one = await self.collection_metadata.find_one({"_id": ObjectId(metadata_id)})
         if metadata_one is None:
             raise HTTPException(status_code=404, detail="Metadata not found")
         metadata_one["_id"] = str(metadata_one["_id"])
@@ -262,11 +259,11 @@ class ImageService:
             departments=departments
         )
 
-        images_cursor = collection_images.find({})
+        images_cursor = self.collection_images.find({})
         images = [str(image["_id"]) for image in await images_cursor.to_list(length=None)]
         
         if search_conditions:
-            tag_doc = await collection_tag_images.find_one({})
+            tag_doc = await self.collection_tag_images.find_one({})
             final_matching_ids = set()
             for condition in search_conditions:
                 group_result = await self._process_condition_group(tag_doc, condition)

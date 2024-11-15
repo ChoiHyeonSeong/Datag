@@ -12,7 +12,6 @@ from email.mime.multipart import MIMEMultipart
 
 from utils.timezone import get_current_time
 from dto.users_dto import UserSignUp, UserSignIn, TokenResponse
-from configs.mongodb import collection_project_permissions, collection_image_permissions
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
@@ -51,9 +50,11 @@ class UserCreate:
     
 ## 2. 회원가입 이메일 인증
 class EmailValidate:
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, mongodb: Session):
         # DB session을 받아서 초기화
         self.db = db
+        self.collection_image_permissions = mongodb.get_collection("imagePermissions")
+        self.collection_project_permissions = mongodb.get_collection("projectPermissions")
         
         try:
             redis_host = os.getenv('REDIS_HOST')
@@ -117,7 +118,7 @@ class EmailValidate:
             department_names = [dept.department_name for dept in departments]
             
             # 1. imagePermissions 관리
-            image_permissions = await collection_image_permissions.find_one()
+            image_permissions = await self.collection_image_permissions.find_one()
             if not image_permissions:
                 # Document가 없는 경우 새로 생성
                 new_image_permissions = {
@@ -125,25 +126,25 @@ class EmailValidate:
                     "department": {dept_name: [] for dept_name in department_names},
                     "project": {}
                 }
-                await collection_image_permissions.insert_one(new_image_permissions)
+                await self.collection_image_permissions.insert_one(new_image_permissions)
             else:
                 # Document는 있지만 department field가 없는 경우
                 for dept_name in department_names:
                     if "department" not in image_permissions:
-                        await collection_image_permissions.update_one(
+                        await self.collection_image_permissions.update_one(
                             {"_id": image_permissions["_id"]},
                             {"$set": {"department": {dept_name: []}}}
                         )
                     # department field가 있지만 Human Resource가 없는 경우
                     elif dept_name not in image_permissions["department"]:
-                        await collection_image_permissions.update_one(
+                        await self.collection_image_permissions.update_one(
                             {"_id": image_permissions["_id"]},
                             {"$set": {f"department.{dept_name}": []}}
                         )
 
 
             # 2. projectPermissions 관리
-            project_permissions = await collection_project_permissions.find_one()
+            project_permissions = await self.collection_project_permissions.find_one()
             if not project_permissions:
                 # Document가 없는 경우 새로 생성
                 new_project_permissions = {
@@ -155,18 +156,18 @@ class EmailValidate:
                         } for dept_name in department_names
                     }
                 }
-                await collection_project_permissions.insert_one(new_project_permissions)
+                await self.collection_project_permissions.insert_one(new_project_permissions)
             else:
                 # Document는 있지만 department field가 없는 경우
                 for dept_name in department_names:
                     if "department" not in project_permissions:
-                        await collection_project_permissions.update_one(
+                        await self.collection_project_permissions.update_one(
                             {"_id": project_permissions["_id"]},
                             {"$set": {"department": {dept_name: {"view": [], "edit": []}}}}
                         )
                 # department field는 있지만 Human Resource가 없는 경우
                     elif dept_name not in project_permissions["department"]:
-                        await collection_project_permissions.update_one(
+                        await self.collection_project_permissions.update_one(
                             {"_id": project_permissions["_id"]},
                             {"$set": {f"department.{dept_name}": {"view": [], "edit": []}}}
                         )

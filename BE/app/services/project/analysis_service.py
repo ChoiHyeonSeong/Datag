@@ -9,12 +9,19 @@ from bson import ObjectId
 
 from dto.search_dto import SearchCondition
 from dto.analysis_dto import DimensionReductionRequest, AutoDimensionReductionRequest, DimensionReductionResponse
-from configs.mongodb import collection_histories, collection_features, collection_project_histories, collection_images, collection_metadata, collection_labels, collection_tag_images, collection_project_images
 from models.history_models import HistoryData, ReductionResults
 
 class AnalysisService:
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, mongodb: Session):
         self.db = db
+        self.collection_histories = mongodb.get_collection("histories")
+        self.collection_features = mongodb.get_collection("features")
+        self.collection_project_histories = mongodb.get_collection("projectHistories")
+        self.collection_images = mongodb.get_collection("images")
+        self.collection_metadata = mongodb.get_collection("metadata")
+        self.collection_labels = mongodb.get_collection("imageLabels")
+        self.collection_tag_images = mongodb.get_collection("tagImages")
+        self.collection_project_images = mongodb.get_collection("projectImages")
 
     # 수동 차원축소
     async def dimension_reduction(self, request: DimensionReductionRequest, user_id: int) -> DimensionReductionResponse:
@@ -40,9 +47,9 @@ class AnalysisService:
 
             concat_image_infos = []
             for i in range(len(image_features)):
-                image_info = await collection_images.find_one({"_id": ObjectId(request.image_ids[i])})
-                image_metadata = await collection_metadata.find_one({"_id": ObjectId(image_info.get("metadataId"))})
-                label_info = await collection_labels.find_one({"_id": ObjectId(image_info.get("labelId"))}) if image_info.get("labelId") else None
+                image_info = await self.collection_images.find_one({"_id": ObjectId(request.image_ids[i])})
+                image_metadata = await self.collection_metadata.find_one({"_id": ObjectId(image_info.get("metadataId"))})
+                label_info = await self.collection_labels.find_one({"_id": ObjectId(image_info.get("labelId"))}) if image_info.get("labelId") else None
 
                 ai_results = image_metadata["aiResults"][0]
                 predictions = ai_results["predictions"][0]
@@ -184,7 +191,7 @@ class AnalysisService:
 
             await self._mapping_project_histories_mongodb(request.project_id, inserted_id)
             
-            project_images = await collection_project_images.find_one({})
+            project_images = await self.collection_project_images.find_one({})
             if not project_images or "project" not in project_images:
                 raise Exception(f"Dimension reduction failed")
 
@@ -215,9 +222,9 @@ class AnalysisService:
 
             concat_image_infos = []
             for i in range(len(image_features)):
-                image_info = await collection_images.find_one({"_id": ObjectId(final_matching_ids[i])})
-                image_metadata = await collection_metadata.find_one({"_id": ObjectId(image_info.get("metadataId"))})
-                label_info = await collection_labels.find_one({"_id": ObjectId(image_info.get("labelId"))}) if image_info.get("labelId") else None
+                image_info = await self.collection_images.find_one({"_id": ObjectId(final_matching_ids[i])})
+                image_metadata = await self.collection_metadata.find_one({"_id": ObjectId(image_info.get("metadataId"))})
+                label_info = await self.collection_labels.find_one({"_id": ObjectId(image_info.get("labelId"))}) if image_info.get("labelId") else None
 
                 ai_results = image_metadata["aiResults"][0]
                 predictions = ai_results["predictions"][0]
@@ -347,7 +354,7 @@ class AnalysisService:
     async def _get_filtered_image_ids(self, condition: SearchCondition) -> set:
         result_ids = None
 
-        tag_doc = await collection_tag_images.find_one({})
+        tag_doc = await self.collection_tag_images.find_one({})
         if not tag_doc:
             raise Exception(f"Can't find tag document")
 
@@ -390,7 +397,7 @@ class AnalysisService:
     # feature 가져오기
     async def _get_image_features(self, image_ids: List[str]) -> List[List[float]]:
         # IN 절을 사용하여 한 번의 쿼리로 모든 이미지 정보 조회
-        images = await collection_images.find(
+        images = await self.collection_images.find(
             {"_id": {"$in": [ObjectId(id) for id in image_ids]}}
         ).to_list(length=None)
 
@@ -408,7 +415,7 @@ class AnalysisService:
         for image_id in image_ids:
             if image_id in image_dict:
                 feature_id = image_dict[image_id]
-                feature_doc = await collection_features.find_one(
+                feature_doc = await self.collection_features.find_one(
                     {"_id": ObjectId(feature_id)}
                 )
                 if feature_doc and "feature" in feature_doc:
@@ -515,7 +522,7 @@ class AnalysisService:
                 selected_algorithm, 
                 selected_tags
             )
-            result = await collection_histories.insert_one(history_obj.model_dump())
+            result = await self.collection_histories.insert_one(history_obj.model_dump())
 
             if result.inserted_id:
                 return str(result.inserted_id)
@@ -532,7 +539,7 @@ class AnalysisService:
         image_infos: List[ReductionResults]
     ):
         try:
-            document = await collection_histories.find_one({"_id": ObjectId(history_id)})
+            document = await self.collection_histories.find_one({"_id": ObjectId(history_id)})
             if not document:
                 raise Exception(f"Document with id {history_id} not found")
             
@@ -542,7 +549,7 @@ class AnalysisService:
                 "updatedAt": datetime.now(timezone.utc)
             }
 
-            await collection_histories.update_one(
+            await self.collection_histories.update_one(
                 {"_id": ObjectId(history_id)},  # ID로 문서 찾기
                 {"$set": update_data}
             )
@@ -554,7 +561,7 @@ class AnalysisService:
         history_id: str
     ):
         try:
-            document = await collection_histories.find_one({"_id": ObjectId(history_id)})
+            document = await self.collection_histories.find_one({"_id": ObjectId(history_id)})
             if not document:
                 raise Exception(f"Document with id {history_id} not found")
             
@@ -563,7 +570,7 @@ class AnalysisService:
                 "updatedAt": datetime.now(timezone.utc)
             }
 
-            await collection_histories.update_one(
+            await self.collection_histories.update_one(
                 {"_id": ObjectId(history_id)},  # ID로 문서 찾기
                 {"$set": update_data}
             )
@@ -573,17 +580,17 @@ class AnalysisService:
     async def _mapping_project_histories_mongodb(self, project_id: str, history_id: str):
         try:
             # 기존 document 확인
-            existing_doc = await collection_project_histories.find_one()
+            existing_doc = await self.collection_project_histories.find_one()
 
             # 문서가 없을 경우 새로운 문서 생성
             if existing_doc is None:
                 new_document = {
                     "project": {}
                 }
-                await collection_project_histories.insert_one(new_document)
+                await self.collection_project_histories.insert_one(new_document)
 
             # 업데이트 수행
-            await collection_project_histories.update_one(
+            await self.collection_project_histories.update_one(
                 {},
                 {
                     "$addToSet": {

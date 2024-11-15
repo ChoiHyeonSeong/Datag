@@ -5,6 +5,7 @@ from typing import List
 
 from dto.common_dto import CommonResponse
 from configs.mariadb import get_database_mariadb
+from configs.mongodb import get_database_mongodb
 from services.auth.auth_service import JWTManage
 from services.image.image_service import ImageService
 from services.image.download_service import DownloadService
@@ -21,10 +22,11 @@ router = APIRouter(prefix="/image", tags=["Image"])
 async def get_image_detail(
     request : SearchImageRequests = Body(default=None),
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
-    db: Session = Depends(get_database_mariadb)
+    maria_db : Session = Depends(get_database_mariadb),
+    mongodb : Session = Depends(get_database_mongodb)
 ):
     try:
-        image_service = ImageService(db)
+        image_service = ImageService(maria_db, mongodb)
         response = await image_service.read_image_detail(request.image_id, request.conditions)
 
         return CommonResponse(
@@ -41,10 +43,11 @@ async def get_image_detail(
 async def download(
     request: DownloadRequest, 
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
-    db: Session = Depends(get_database_mariadb)
+    maria_db : Session = Depends(get_database_mariadb),
+    mongodb : Session = Depends(get_database_mongodb)
 ):
     try:
-        download_service = DownloadService(db)
+        download_service = DownloadService(maria_db, mongodb)
         return await download_service.download_image(request)
     except HTTPException as http_exc:
         raise http_exc
@@ -58,15 +61,16 @@ async def search_images(
     page: int = Query(1, ge=1, description="페이지 번호"),
     limit: int = Query(10, ge=1, le=100, description="페이지당 항목 수"),
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
-    db: Session = Depends(get_database_mariadb)
+    maria_db : Session = Depends(get_database_mariadb),
+    mongodb : Session = Depends(get_database_mongodb)
 ):
     try:
-        jwt = JWTManage(db)
+        jwt = JWTManage(maria_db)
         user_id = jwt.verify_token(credentials.credentials)["user_id"]
         
         conditions = conditions or SearchRequest()
         
-        image_service = ImageService(db)
+        image_service = ImageService(maria_db, mongodb)
         result = await image_service.search_images_by_conditions(
             conditions.conditions, 
             user_id,

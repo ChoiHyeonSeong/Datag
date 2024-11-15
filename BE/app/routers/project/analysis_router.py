@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from dto.analysis_dto import DimensionReductionRequest, AutoDimensionReductionRequest
 from dto.common_dto import CommonResponse
 from configs.mariadb import get_database_mariadb
+from configs.mongodb import get_database_mongodb
 from services.auth.auth_service import JWTManage
 from services.project.analysis_service import AnalysisService
 
@@ -18,14 +19,15 @@ async def dimension_reduction(
     request: DimensionReductionRequest,
     background_tasks: BackgroundTasks,
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
-    db: Session = Depends(get_database_mariadb)
+    maria_db : Session = Depends(get_database_mariadb),
+    mongodb : Session = Depends(get_database_mongodb)
 ):
     try:
         access_token = credentials.credentials
-        jwt = JWTManage(db)
+        jwt = JWTManage(maria_db)
         user_id = jwt.verify_token(access_token)["user_id"]
 
-        analysis_service = AnalysisService(db)
+        analysis_service = AnalysisService(maria_db, mongodb)
         background_tasks.add_task(
             analysis_service.dimension_reduction,
             request,
@@ -46,14 +48,15 @@ async def dimension_reduction(
     request: AutoDimensionReductionRequest,
     background_tasks: BackgroundTasks,
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
-    db: Session = Depends(get_database_mariadb)
+    maria_db : Session = Depends(get_database_mariadb),
+    mongodb : Session = Depends(get_database_mongodb)
 ):
     try:
         access_token = credentials.credentials
-        jwt = JWTManage(db)
+        jwt = JWTManage(maria_db)
         user_id = jwt.verify_token(access_token)["user_id"]
 
-        analysis_service = AnalysisService(db)
+        analysis_service = AnalysisService(maria_db, mongodb)
         background_tasks.add_task(
             analysis_service.auto_dimension_reduction,
             request,
