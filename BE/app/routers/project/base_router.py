@@ -129,7 +129,7 @@ async def search_project_images(
 async def image_upload(
     background_tasks: BackgroundTasks,
     upload_request: str = Form(...),
-    files: Optional[list[UploadFile]] = File(None),
+    files: list[UploadFile] | None = Form([]),
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
     db : Session = Depends(get_database_mariadb),
 ):
