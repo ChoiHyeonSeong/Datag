@@ -31,6 +31,7 @@ async def auth_headers(async_client):
     
     return {"Authorization": f"Bearer {token}"}
 
+# 프로젝트 생성 요청 성공
 @pytest.mark.asyncio
 async def test_create_project(async_client, auth_headers):
     data = {

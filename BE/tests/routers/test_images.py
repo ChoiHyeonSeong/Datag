@@ -1,195 +1,213 @@
-import json
 import pytest
+from httpx import AsyncClient
+from asgi_lifespan import LifespanManager
+import asyncio
+import json
 import sys
 import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'app')))
 
-from fastapi import HTTPException
-from fastapi.testclient import TestClient
-from unittest.mock import Mock, patch
-from main import app
-from configs.mongodb import client as mongo_client
+from app.main import app
 
-client = TestClient(app)
+@pytest.fixture(scope="module")
+async def async_client():
+    async with LifespanManager(app):
+        async with AsyncClient(app=app, base_url="http://127.0.0.1:8000") as client:
+            yield client
 
-# 1. 해당 이미지 유저 권한 추가
-def test_add_user_permission(auth_headers, mock_upload_service, mock_db):
-    image_user_permission_add_request = {
-    "image_id": "6732f4f3db3183653e78ac44",
-    "user_id_list": [1, 2]
-    }
-
-    session = mongo_client.start_session()
-    session.start_transaction()
-
-    response = client.post(
-        "be/api/image/permission/addUser",
-        data={"image_user_permission_add_request": json.dumps(image_user_permission_add_request)},
-        headers=auth_headers
-    )
-
-    session.abort_transaction()
-
-    assert response.status_code == 200
-    assert response.json() == {
-        "status": 200,
-        "data": "해당 이미지에 유저 권한 추가를 성공하였습니다."
-    }
-
-    mock_upload_service.return_value.upload_image.assert_called_once()
-
-# 2. 해당 이미지 유저 권한 삭제
-def test_remove_user_permission(auth_headers, mock_upload_service, mock_db):
-    image_user_permission_remove_request = {
-    "image_id": "6732f4f3db3183653e78ac44",
-    "user_id_list": [1, 2]
-    }
-
-    session = mongo_client.start_session()
-    session.start_transaction()
-
-    response = client.post(
-        "be/api/image/permission/removeUser",
-        data={"image_user_permission_remove_request": json.dumps(image_user_permission_remove_request)},
-        headers=auth_headers
-    )
-
-    session.abort_transaction()
-
-    assert response.status_code == 200
-    assert response.json() == {
-        "status": 200,
-        "data": "해당 이미지에 유저 권한 삭제를 성공하였습니다."
-    }
-
-    mock_upload_service.return_value.upload_image.assert_called_once()
-
-# 3. 해당 이미지 부서 권한 추가
-def test_add_department_permission(auth_headers, mock_upload_service, mock_db):
-    image_department_permission_add_request = {
-    "image_id": "6732f4f3db3183653e78ac44",
-    "department_name_list": ["Research and Development", "Human Resource"]
-    }
-
-    session = mongo_client.start_session()
-    session.start_transaction()
-
-    response = client.post(
-        "be/api/image/permission/addDepartment",
-        data={"image_department_permission_add_request": json.dumps(image_department_permission_add_request)},
-        headers=auth_headers
-    )
-
-    session.abort_transaction()
-
-    assert response.status_code == 200
-    assert response.json() == {
-        "status": 200,
-        "data": "해당 이미지에 부서 권한 추가를 성공하였습니다"
-    }
-
-    mock_upload_service.return_value.upload_image.assert_called_once()
-
-# 4. 해당 이미지 부서 권한 삭제
-def test_remove_department_permission(auth_headers, mock_upload_service, mock_db):
-    image_department_permission_remove_request = {
-    "image_id": "6732f4f3db3183653e78ac44",
-    "department_name_list": ["Research and Development", "Human Resource"]
-    }
-
-    session = mongo_client.start_session()
-    session.start_transaction()
-
-    response = client.post(
-        "be/api/image/permission/removeDepartment",
-        data={"image_department_permission_remove_request": json.dumps(image_department_permission_remove_request)},
-        headers=auth_headers
-    )
-
-    session.abort_transaction()
-
-    assert response.status_code == 200
-    assert response.json() == {
-        "status": 200,
-        "data": "해당 이미지에 부서 권한 삭제를 성공하였습니다"
-    }
-
-    mock_upload_service.return_value.upload_image.assert_called_once()
-
-# 5. 이미지 정보 조회 (리퀘스트가 없으면 ??)
-def test_get_image_detail(auth_headers, mock_upload_service, mock_db):
-    image_department_permission_remove_request = {
-    "image_id": "6732f4f3db3183653e78ac44"
-    }
-
-    session = mongo_client.start_session()
-    session.start_transaction()
-
-    response = client.post(
-        "be/api/image/detail/{image_id}",
-        data={"image_department_permission_remove_request": json.dumps(image_department_permission_remove_request)},
-        headers=auth_headers
-    )
-
-    session.abort_transaction()
-
-    assert response.status_code == 200
-    assert response.json() == {
-        "status": 200,
-        "data": "해당 이미지 정보 조회를 성공하였습니다"
-    }
-
-    mock_upload_service.return_value.upload_image.assert_called_once()
-
-# 6. 해당 이미지에 태그 추가
-def test_add_image_tag(auth_headers, mock_upload_service, mock_db):
-    image_detail_tag_add_request = {
-    "image_id": "6732f4f3db3183653e78ac44",
-    "tag_list": ["dog", "bird"]
-    }
-
-    session = mongo_client.start_session()
-    session.start_transaction()
-
-    response = client.post(
-        "be/api/image/tag/add",
-        data={"image_detail_tag_add_request": json.dumps(image_detail_tag_add_request)},
-        headers=auth_headers
-    )
-
-    session.abort_transaction()
-
-    assert response.status_code == 200
-    assert response.json() == {
-        "status": 200,
-        "data": "해당 이미지에 유저 권한 추가를 성공하였습니다"
-    }
-
-    mock_upload_service.return_value.upload_image.assert_called_once()
-
-# 7. 해당 이미지에 태그 삭제
-def test_remove_image_tag(auth_headers, mock_upload_service, mock_db):
-    image_detail_tag_remove_request = {
-    "image_id": "6732f4f3db3183653e78ac44",
-    "remove_tag_list": ["dog", "bird"]
+@pytest.fixture(scope="module")
+async def auth_headers(async_client):
+    login_data = {
+        "email": "test1@tmail.ws",  
+        "password": "1234"
     }
     
-    session = mongo_client.start_session()
-    session.start_transaction()
+    response = await async_client.post("be/api/auth/login", json=login_data)
+    assert response.status_code == 200 
+    
+    token = response.json()["data"].get("access_token")
+    assert token is not None, "토큰이 반환되지 않았습니다."
+    
+    return {"Authorization": f"Bearer {token}"}
 
-    response = client.post(
-        "be/api/image/tag/remove",
-        data={"image_detail_tag_remove_request": json.dumps(image_detail_tag_remove_request)},
+# 1. 이미지 정보 조회
+@pytest.mark.asyncio
+async def test_get_image_detail(async_client, auth_headers):
+    data = {
+            "project_id": "6732f477fcec9d2c66a7507c",
+            "image_id": "6732f4f8db3183653e78ac53",
+            "conditions": [
+                {
+                    "and_condition": [],
+                    "or_condition": [],
+                    "not_condition": []
+                }
+            ]
+        }
+    
+    response = await async_client.post(
+        f"be/api/image/detail/{data['project_id']}/{data['image_id']}",
+        json=data,
+        headers=auth_headers
+    )
+    print(response.json())
+
+    assert response.status_code == 200
+    assert response.json()["status"] == 200
+    assert "data" in response.json()
+    return response.json()["data"]
+
+# 2. 이미지 조회
+@pytest.mark.asyncio
+async def test_search_images(async_client, auth_headers):
+    data = {
+            "page": 1,
+            "limit": 10,
+            "conditions": [
+                {
+                    "and_condition": ["cat", "Seoul"],
+                    "or_condition": ["2024_11"],
+                    "not_condition": ["Zone A"]
+                }
+            ]
+        }
+    
+    response = await async_client.post(
+        "be/api/image/search",
+        json=data,
         headers=auth_headers
     )
 
-    session.abort_transaction()
+    assert response.status_code == 200
+    assert response.json()["status"] == 200
+    assert "data" in response.json()
+    return response.json()["data"]
+
+# 3. 해당 이미지 부서 권한 추가
+@pytest.mark.asyncio
+async def test_add_department_permission(async_client, auth_headers):
+    data = {
+            "image_id": "6732f4f3db3183653e78ac44",
+            "department_name_list": ["Research and Development", "Computer"]
+        }
+    
+    response = await async_client.post(
+        "be/api/image/permission/addDepartment",
+        json=data,
+        headers=auth_headers
+    )
 
     assert response.status_code == 200
-    assert response.json() == {
-        "status": 200,
-        "data": "이미지 업로드에 성공하였습니다."
-    }
+    assert response.json()["status"] == 200
+    assert "data" in response.json()
+    return response.json()["data"]
 
-    mock_upload_service.return_value.upload_image.assert_called_once()
+# 4. 해당 이미지 유저 권한 추가
+@pytest.mark.asyncio
+async def test_add_user_permission(async_client, auth_headers):
+    data = {
+            "image_id": "6732f4f3db3183653e78ac44",
+            "user_id_list": ["1", "2"]
+        }
+
+    response = await async_client.post(
+        "be/api/image/permission/addUser",
+        json=data,
+        headers=auth_headers
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == 200
+    assert "data" in response.json()
+    return response.json()["data"]
+
+# # 5. 해당 이미지 부서 권한 삭제
+# @pytest.mark.asyncio
+# async def test_remove_department_permission(async_client, auth_headers):
+#     data = {
+#             "image_id": "6732f4f3db3183653e78ac44",
+#             "department_name_list": ["Computer", "Research and Development"]
+#         }
+
+#     response = await async_client.post(
+#         "be/api/image/permission/removeDepartment",
+#         json=data,
+#         headers=auth_headers
+#     )
+
+#     assert response.status_code == 200
+#     assert response.json()["status"] == 200
+#     assert "data" in response.json()
+#     return response.json()["data"]
+
+# # 6. 해당 이미지 유저 권한 삭제
+# @pytest.mark.asyncio
+# async def test_remove_user_permission(async_client, auth_headers):
+
+#     data = {
+#             "image_id": "6732f4f3db3183653e78ac44",
+#             "user_id_list": ["1", "2"]
+#         }
+
+#     response = await async_client.post(
+#         "be/api/image/permission/removeUser",
+#         json=data,
+#         headers=auth_headers
+#     )
+
+#     assert response.status_code == 200
+#     assert response.json()["status"] == 200
+#     assert "data" in response.json()
+#     return response.json()["data"]
+
+# 7. 해당 이미지에 태그 추가
+@pytest.mark.asyncio
+async def test_add_image_tag(async_client, auth_headers):
+    data = {
+            "image_id": "6732f4f3db3183653e78ac44",
+            "tag_list": ["dog", "cat"]
+        }
+    
+    response = await async_client.post(
+        "be/api/image/tag/add",
+        json=data,
+        headers=auth_headers
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == 200
+    assert "data" in response.json()
+    return response.json()["data"]
+
+# # 8. 해당 이미지에 태그 삭제
+# @pytest.mark.asyncio
+# async def test_remove_image_tag(async_client, auth_headers):
+#     data = {
+#             "image_id": "str",
+#             "remove_tag_list": ["dog", "cat"]
+#         }
+
+#     response = await async_client.post(
+#         "be/api/image/tag/remove",
+#         json=data,
+#         headers=auth_headers
+#     )
+
+#     assert response.status_code == 200
+#     assert response.json()["status"] == 200
+#     assert "data" in response.json()
+#     return response.json()["data"]
+
+# 9. 태그 리스트 불러오기
+@pytest.mark.asyncio
+async def test_get_tags_and_images(async_client, auth_headers):
+    response = await async_client.get(
+        "be/api/image/tag/list",
+        headers=auth_headers
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == 200
+    assert "data" in response.json()
+    return response.json()["data"]

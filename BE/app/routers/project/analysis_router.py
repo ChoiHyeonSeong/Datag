@@ -14,7 +14,7 @@ security_scheme = HTTPBearer()
 router = APIRouter(prefix="/project", tags=["Project"])
 
 @router.post("/analysis/manual", response_model=CommonResponse[dict])
-async def dimension_reduction_umap(
+async def dimension_reduction(
     request: DimensionReductionRequest,
     background_tasks: BackgroundTasks,
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
@@ -45,7 +45,7 @@ async def dimension_reduction_umap(
         raise HTTPException(status_code=400, detail=str(e))
     
 @router.post("/analysis/auto", response_model=CommonResponse[dict])
-async def dimension_reduction_umap(
+async def dimension_reduction(
     request: AutoDimensionReductionRequest,
     background_tasks: BackgroundTasks,
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),

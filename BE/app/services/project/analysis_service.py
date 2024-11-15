@@ -133,7 +133,7 @@ class AnalysisService:
                         "label": label_info["label"][0] if label_info else None,
                         "imageUrl": image_metadata["fileList"][0]
                     })
-                        
+            
             # features concatenate
             concat_features = self._concatenate_array(image_features)
             
