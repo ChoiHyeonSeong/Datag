@@ -533,7 +533,7 @@ class ProjectService:
             tag_not_images = set(tag_not_images)
 
             # 최종 필터링된 이미지 목록 생성
-            filtered_images = list((set(tag_and_images) | set(tag_or_images)) - tag_not_images)
+            filtered_images = list((set(tag_and_images) & set(tag_or_images)) - tag_not_images)
 
             # 필터링된 이미지를 project에 저장
             for image_id in filtered_images:
