@@ -22,6 +22,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 def get_database_mariadb():
     db = SessionLocal()
     try:
+        print("Successfully connected to MariaDB")
         yield db
     finally:
         db.close()
