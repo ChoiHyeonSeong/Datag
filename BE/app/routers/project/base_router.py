@@ -9,7 +9,7 @@ from dto.pagination_dto import PaginationDto
 from dto.project_dto import ProjectRequest, ProjectResponse, AddImageRequest, AddFilteringImageRequest
 from services.project.project_service import ProjectService
 from services.auth.auth_service import JWTManage
-from dto.search_dto import ImageSearchResponse, SearchCondition, SearchRequest
+from dto.search_dto import ImageSearchResponse, SearchRequest, SearchProjectImageRequest
 from dto.uploads_dto import UploadRequest
 from services.project.upload_service import UploadService
 import json
@@ -103,7 +103,7 @@ async def search_project_images(
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
     db: Session = Depends(get_database_mariadb)
 ):
-    # try:
+    try:
         conditions = conditions or SearchRequest()
 
         project_service = ProjectService(db)
@@ -119,10 +119,10 @@ async def search_project_images(
             status=200, 
             data=result
         )
-    # except HTTPException as http_exc:
-    #     raise http_exc
-    # except Exception as e:
-    #     raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 # 5. 이미지 업로드
 @router.post("/image/upload", description="이미지 업로드(zip, image)")
@@ -219,3 +219,22 @@ async def filter_image_add(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+# 9. 프로젝트 이미지 정보 조회
+@router.post('/image/detail', description="프로젝트 이미지 정보 조회")
+async def get_image_detail(
+    request : SearchProjectImageRequest = Body(default=None),
+    credentials: HTTPAuthorizationCredentials = Security(security_scheme),
+    db: Session = Depends(get_database_mariadb)
+):
+    try:
+        project_service = ProjectService(db)
+        response = await project_service.read_image_detail(request.project_id, request.image_id, request.conditions)
+
+        return CommonResponse(
+            status=200,
+            data=response
+        )
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

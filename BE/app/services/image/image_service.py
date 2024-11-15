@@ -6,7 +6,7 @@ from bson import ObjectId
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 
-from dto.search_dto import TagImageResponse, SearchCondition, ImageSearchResponse, SearchProjectImageRequest
+from dto.search_dto import TagImageResponse, SearchCondition, ImageSearchResponse
 from dto.image_detail_dto import UserInformation, AccessControl, ImageDetailResponse
 from dto.pagination_dto import PaginationDto
 from models.mariadb_users import Users, Departments
@@ -218,7 +218,6 @@ class ImageService:
     # 1. 이미지 정보 가져오기
     async def read_image_detail(
     self,
-    project_id: str,
     image_id: str,
     search_conditions: List[SearchCondition] | None
 ) -> ImageDetailResponse:
@@ -262,13 +261,9 @@ class ImageService:
             users=user_list,
             departments=departments
         )
-        
-        project = await collection_project_images.find_one({"project." + project_id: {"$exists": True}})
-        if project is None:
-            raise HTTPException(status_code=404, detail="Project not found")
-        
-        # 프로젝트의 image 목록 가져오기
-        images = project.get("project", {}).get(project_id, [])
+
+        images_cursor = collection_images.find({})
+        images = [str(image["_id"]) for image in await images_cursor.to_list(length=None)]
         
         if search_conditions:
             tag_doc = await collection_tag_images.find_one({})

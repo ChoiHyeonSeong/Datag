@@ -19,7 +19,8 @@ from configs.mongodb import (
 )
 
 from dto.pagination_dto import PaginationDto
-from dto.project_dto import ProjectRequest, ProjectResponse, AddImageRequest, AddFilteringImageRequest, AddFilteringImageResponse
+from dto.project_dto import ProjectRequest, ProjectResponse, AddImageRequest, AddFilteringImageResponse
+from dto.image_detail_dto import UserInformation, AccessControl, ImageDetailResponse
 from models.mariadb_users import Users, Departments
 from typing import List
 
@@ -566,6 +567,115 @@ class ProjectService:
                 "image_list": filtered_images
             }
 
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"이미지 정보 조회 중 오류가 발생했습니다: {str(e)}"
+            )
+        
+        # 1. 이미지 정보 가져오기
+    async def read_image_detail(
+    self,
+    project_id: str,
+    image_id: str,
+    search_conditions: List[SearchCondition] | None
+) -> ImageDetailResponse:
+
+        # images, metadata
+        image_one = await collection_images.find_one({"_id": ObjectId(image_id)})
+        if image_one is None:
+            raise HTTPException(status_code=404, detail="Image not found")
+        image_one["_id"] = str(image_one["_id"])
+
+        metadata_id = image_one.get("metadataId")
+        metadata_one = await collection_metadata.find_one({"_id": ObjectId(metadata_id)})
+        if metadata_one is None:
+            raise HTTPException(status_code=404, detail="Metadata not found")
+        metadata_one["_id"] = str(metadata_one["_id"])
+
+        # users, accessControl
+        access_control_one = metadata_one.get("metadata").get("accessControl")
+        users = access_control_one.get("users")
+        departments = access_control_one.get("departments")
+        if not isinstance(departments, list) or any(department == '' for department in departments):
+            departments = []
+
+        user_list = []
+        for user in users:
+            user_one = self.db.query(Users).filter(Users.user_id.like(f"%{user}%")).first()
+            if user_one is None:
+                continue
+            department_id = user_one.department_id
+            department_one = self.db.query(Departments).filter(Departments.department_id == department_id).first()
+            department_name = department_one.department_name if department_one else "Unknown Department"
+
+            user_information = UserInformation(
+                uid=user_one.user_id,
+                name=user_one.name,
+                department_name=department_name
+            )
+            user_list.append(user_information)
+        
+        access_control = AccessControl(
+            users=user_list,
+            departments=departments
+        )
+        
+        project = await collection_project_images.find_one({"project." + project_id: {"$exists": True}})
+        if project is None:
+            raise HTTPException(status_code=404, detail="Project not found")
+        
+        # 프로젝트의 image 목록 가져오기
+        images = project.get("project", {}).get(project_id, [])
+        
+        if search_conditions:
+            tag_doc = await collection_tag_images.find_one({})
+            final_matching_ids = set()
+            for condition in search_conditions:
+                group_result = await self._process_condition_group(tag_doc, condition)
+                final_matching_ids.update(group_result)
+
+            images = list(set(images) & final_matching_ids)
+
+        
+        if not images:
+            raise HTTPException(status_code=404, detail="No images found for this project")
+
+        total_pages = len(images)
+        start_index = 0
+
+        # image_id가 제공된 경우 start_index 설정
+        if image_id:
+            try:
+                start_index = images.index(image_id)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid image_id")
+
+        next_cursor = None
+        previous_cursor = None
+
+        current_page = start_index + 1
+        
+        # next_cursor 설정
+        if len(images) > current_page:
+            next_cursor = images[current_page]
+
+        # previous_cursor 설정
+        if start_index > 0:
+            previous_cursor = images[max(0, start_index - 1)]
+
+        # result
+        try:
+            return {
+                "metadata": metadata_one,
+                "access_control": access_control,
+                "pagination": {
+                    "previous_cursor": previous_cursor,
+                    "next_cursor": next_cursor,
+                    "current_page": current_page,
+                    "total_pages": total_pages
+                }
+            }
         except Exception as e:
             raise HTTPException(
                 status_code=500,
