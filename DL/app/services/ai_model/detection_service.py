@@ -80,6 +80,8 @@ class ObjectDetectionService:
                     label_id = None
 
                 image_id = await self.image_service.save_images_mongodb(metadata_id, features_id, label_id)
+                
+                await self.image_service.mapping_image_model_mongodb(image_id, request.model_name)
 
                 for tag in tags:
                     await self.detection_metadata_service.mapping_image_tags_mongodb(tag, image_id)

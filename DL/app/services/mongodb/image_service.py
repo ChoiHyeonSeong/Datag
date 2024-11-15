@@ -1,6 +1,6 @@
 from fastapi import HTTPException
 from typing import List
-from configs.mongodb import collection_metadata, collection_features, collection_images, collection_project_images, collection_image_permissions
+from configs.mongodb import collection_images, collection_project_images, collection_image_permissions, collection_image_models
 from models.feature_models import Feature
 from models.image_models import ImageData
 from datetime import datetime, timezone
@@ -106,3 +106,29 @@ class ImageService:
             
         except Exception as e:
             raise Exception(f"Failed to update results: {str(e)}")
+        
+    async def mapping_image_model_mongodb(self, image_id: str, model_name: str):
+        try:
+            # 문서가 존재하는지 확인
+            existing_document = await collection_image_models.find_one({})
+            
+            if not existing_document:
+                # 문서가 없으면 생성
+                new_document = {
+                    "models": {
+                        model_name: [image_id]
+                    }
+                }
+                await collection_image_models.insert_one(new_document)
+                print("New document created.")
+            else:
+                # 문서가 있으면 업데이트
+                await collection_image_models.update_one(
+                    {"_id": existing_document.get("_id")},
+                    {
+                        "$addToSet": {f"models.{model_name}": image_id}  # 중복 없이 추가
+                    }
+                )
+                print("Document updated.")
+        except Exception as e:
+            raise Exception(f"Failed to mapping image to models: {str(e)}")

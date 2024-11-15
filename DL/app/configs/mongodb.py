@@ -14,6 +14,7 @@ collection_project_images = database.get_collection("projectImages")
 collection_image_permissions = database.get_collection("imagePermissions")
 collection_tag_images = database.get_collection("tagImages")
 collection_labels = database.get_collection("imageLabels")
+collection_image_models = database.get_collection("imageModels")
 
 def get_database_mongodb():
     try:

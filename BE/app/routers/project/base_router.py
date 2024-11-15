@@ -103,7 +103,7 @@ async def search_project_images(
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
     db: Session = Depends(get_database_mariadb)
 ):
-    try:
+    # try:
         conditions = conditions or SearchRequest()
 
         project_service = ProjectService(db)
@@ -119,10 +119,10 @@ async def search_project_images(
             status=200, 
             data=result
         )
-    except HTTPException as http_exc:
-        raise http_exc
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    # except HTTPException as http_exc:
+    #     raise http_exc
+    # except Exception as e:
+    #     raise HTTPException(status_code=400, detail=str(e))
 
 # 5. 이미지 업로드
 @router.post("/image/upload", description="이미지 업로드(zip, image)")
