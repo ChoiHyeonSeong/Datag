@@ -3,31 +3,35 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from models.mariadb_users import Users, Departments
 from dto.image_detail_dto import ImageDepartmentPermissionRemoveResponse, ImageUserPermissionRemoveResponse, ImageDepartmentPermissionAddResponse, ImageUserPermissionAddResponse, ImageDepartmentPermissionRemoveRequest, ImageUserPermissionRemoveRequest, ImageDepartmentPermissionAddRequest, ImageDetailTagAddRequest, ImageDetailTagAddResponse, ImageDetailTagRemoveRequest, ImageDetailTagRemoveResponse, ImageUserPermissionAddRequest, UserDetail
-from configs.mongodb import collection_metadata, collection_images, collection_tag_images, collection_image_permissions
 
 class ImageExtraService:
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, mongodb: Session):
         self.db = db
+        self.collection_metadata = mongodb.get_collection("metadata")
+        self.collection_images = mongodb.get_collection("images")
+        self.collection_tag_images = mongodb.get_collection("tagImages")
+        self.collection_image_permissions = mongodb.get_collection("imagePermissions")
+
     
     # 1. 태그 추가
     async def add_image_tag(self, request: ImageDetailTagAddRequest) -> ImageDetailTagAddResponse:
 
         ### images, matadata
         image_id = request.image_id
-        image_one = await collection_images.find_one({"_id": ObjectId(image_id)})
+        image_one = await self.collection_images.find_one({"_id": ObjectId(image_id)})
         if image_one is None:
             raise HTTPException(status_code=404, detail="Image not found")
         image_one["_id"] = str(image_one["_id"])
 
         metadata_id = image_one.get("metadataId")
-        metadata_one = await collection_metadata.find_one({"_id": ObjectId(metadata_id)})
+        metadata_one = await self.collection_metadata.find_one({"_id": ObjectId(metadata_id)})
         if metadata_one is None:
             raise HTTPException(status_code=404, detail="Metadata not found")
         metadata_one["_id"] = str(metadata_one["_id"])
         ###
 
         # metadata -> tags
-        await collection_metadata.update_one(
+        await self.collection_metadata.update_one(
             {"_id": ObjectId(metadata_id)},
             {
                 "$addToSet": {
@@ -38,7 +42,7 @@ class ImageExtraService:
 
         # tagImages
         for tag in request.tag_list:
-            await collection_tag_images.update_one(
+            await self.collection_tag_images.update_one(
                 {},
                 {
                     "$addToSet": {
@@ -49,13 +53,13 @@ class ImageExtraService:
 
         ### images, matadata
         image_id = request.image_id
-        image_one = await collection_images.find_one({"_id": ObjectId(image_id)})
+        image_one = await self.collection_images.find_one({"_id": ObjectId(image_id)})
         if image_one is None:
             raise HTTPException(status_code=404, detail="Image not found")
         image_one["_id"] = str(image_one["_id"])
 
         metadata_id = image_one.get("metadataId")
-        metadata_one = await collection_metadata.find_one({"_id": ObjectId(metadata_id)})
+        metadata_one = await self.collection_metadata.find_one({"_id": ObjectId(metadata_id)})
         if metadata_one is None:
             raise HTTPException(status_code=404, detail="Metadata not found")
         metadata_one["_id"] = str(metadata_one["_id"])
@@ -79,20 +83,20 @@ class ImageExtraService:
         
         ### images, matadata
         image_id = request.image_id
-        image_one = await collection_images.find_one({"_id": ObjectId(image_id)})
+        image_one = await self.collection_images.find_one({"_id": ObjectId(image_id)})
         if image_one is None:
             raise HTTPException(status_code=404, detail="Image not found")
         image_one["_id"] = str(image_one["_id"])
 
         metadata_id = image_one.get("metadataId")
-        metadata_one = await collection_metadata.find_one({"_id": ObjectId(metadata_id)})
+        metadata_one = await self.collection_metadata.find_one({"_id": ObjectId(metadata_id)})
         if metadata_one is None:
             raise HTTPException(status_code=404, detail="Metadata not found")
         metadata_one["_id"] = str(metadata_one["_id"])
         ###
 
         # metadata -> tags
-        await collection_metadata.update_one(
+        await self.collection_metadata.update_one(
             {"_id": ObjectId(metadata_id)},
             {
                 "$pull": {
@@ -103,7 +107,7 @@ class ImageExtraService:
 
         # tagImages
         for tag in request.remove_tag_list:
-            await collection_tag_images.update_one(
+            await self.collection_tag_images.update_one(
                 {},
                 {
                     "$pull": {
@@ -113,25 +117,25 @@ class ImageExtraService:
             )
 
         # tagImages -> tagDatas
-        tag_datas = await collection_tag_images.find_one()
+        tag_datas = await self.collection_tag_images.find_one()
         
         # 빈 배열이 된 태그 필드 삭제
         for tag, images in tag_datas.get("tag", {}).items():
             if not images:  # 빈 배열인 경우
-                await collection_tag_images.update_one(
+                await self.collection_tag_images.update_one(
                     {},
                     {"$unset": {f"tag.{tag}": ""}}
                 )
 
         ### images, matadata
         image_id = request.image_id
-        image_one = await collection_images.find_one({"_id": ObjectId(image_id)})
+        image_one = await self.collection_images.find_one({"_id": ObjectId(image_id)})
         if image_one is None:
             raise HTTPException(status_code=404, detail="Image not found")
         image_one["_id"] = str(image_one["_id"])
 
         metadata_id = image_one.get("metadataId")
-        metadata_one = await collection_metadata.find_one({"_id": ObjectId(metadata_id)})
+        metadata_one = await self.collection_metadata.find_one({"_id": ObjectId(metadata_id)})
         if metadata_one is None:
             raise HTTPException(status_code=404, detail="Metadata not found")
         metadata_one["_id"] = str(metadata_one["_id"])
@@ -156,20 +160,20 @@ class ImageExtraService:
         
         ### images, matadata
         image_id = request.image_id
-        image_one = await collection_images.find_one({"_id": ObjectId(image_id)})
+        image_one = await self.collection_images.find_one({"_id": ObjectId(image_id)})
         if image_one is None:
             raise HTTPException(status_code=404, detail="Image not found")
         image_one["_id"] = str(image_one["_id"])
 
         metadata_id = image_one.get("metadataId")
-        metadata_one = await collection_metadata.find_one({"_id": ObjectId(metadata_id)})
+        metadata_one = await self.collection_metadata.find_one({"_id": ObjectId(metadata_id)})
         if metadata_one is None:
             raise HTTPException(status_code=404, detail="Metadata not found")
         metadata_one["_id"] = str(metadata_one["_id"])
         ###
 
         # metadata -> users
-        await collection_metadata.update_one(
+        await self.collection_metadata.update_one(
             {"_id": ObjectId(metadata_id)},
             {
                 "$addToSet": {
@@ -180,7 +184,7 @@ class ImageExtraService:
 
         # imagePermissions -> user
         for user_id in request.user_id_list:
-            await collection_image_permissions.update_one(
+            await self.collection_image_permissions.update_one(
                 {},
                 {
                     "$addToSet": {
@@ -191,13 +195,13 @@ class ImageExtraService:
         
         ### images, matadata
         image_id = request.image_id
-        image_one = await collection_images.find_one({"_id": ObjectId(image_id)})
+        image_one = await self.collection_images.find_one({"_id": ObjectId(image_id)})
         if image_one is None:
             raise HTTPException(status_code=404, detail="Image not found")
         image_one["_id"] = str(image_one["_id"])
 
         metadata_id = image_one.get("metadataId")
-        metadata_one = await collection_metadata.find_one({"_id": ObjectId(metadata_id)})
+        metadata_one = await self.collection_metadata.find_one({"_id": ObjectId(metadata_id)})
         if metadata_one is None:
             raise HTTPException(status_code=404, detail="Metadata not found")
         metadata_one["_id"] = str(metadata_one["_id"])
@@ -244,20 +248,20 @@ class ImageExtraService:
         
         ### images, matadata
         image_id = request.image_id
-        image_one = await collection_images.find_one({"_id": ObjectId(image_id)})
+        image_one = await self.collection_images.find_one({"_id": ObjectId(image_id)})
         if image_one is None:
             raise HTTPException(status_code=404, detail="Image not found")
         image_one["_id"] = str(image_one["_id"])
 
         metadata_id = image_one.get("metadataId")
-        metadata_one = await collection_metadata.find_one({"_id": ObjectId(metadata_id)})
+        metadata_one = await self.collection_metadata.find_one({"_id": ObjectId(metadata_id)})
         if metadata_one is None:
             raise HTTPException(status_code=404, detail="Metadata not found")
         metadata_one["_id"] = str(metadata_one["_id"])
         ###
 
         # metadata -> departments
-        await collection_metadata.update_one(
+        await self.collection_metadata.update_one(
             {"_id": ObjectId(metadata_id)},
             {
                 "$addToSet": {
@@ -268,7 +272,7 @@ class ImageExtraService:
 
         # imagePermissions -> user
         for department_name in request.department_name_list:
-            await collection_image_permissions.update_one(
+            await self.collection_image_permissions.update_one(
                 {},
                 {
                     "$addToSet": {
@@ -279,13 +283,13 @@ class ImageExtraService:
         
         ### images, matadata
         image_id = request.image_id
-        image_one = await collection_images.find_one({"_id": ObjectId(image_id)})
+        image_one = await self.collection_images.find_one({"_id": ObjectId(image_id)})
         if image_one is None:
             raise HTTPException(status_code=404, detail="Image not found")
         image_one["_id"] = str(image_one["_id"])
 
         metadata_id = image_one.get("metadataId")
-        metadata_one = await collection_metadata.find_one({"_id": ObjectId(metadata_id)})
+        metadata_one = await self.collection_metadata.find_one({"_id": ObjectId(metadata_id)})
         if metadata_one is None:
             raise HTTPException(status_code=404, detail="Metadata not found")
         metadata_one["_id"] = str(metadata_one["_id"])
@@ -312,20 +316,20 @@ class ImageExtraService:
         
         ### images, matadata
         image_id = request.image_id
-        image_one = await collection_images.find_one({"_id": ObjectId(image_id)})
+        image_one = await self.collection_images.find_one({"_id": ObjectId(image_id)})
         if image_one is None:
             raise HTTPException(status_code=404, detail="Image not found")
         image_one["_id"] = str(image_one["_id"])
 
         metadata_id = image_one.get("metadataId")
-        metadata_one = await collection_metadata.find_one({"_id": ObjectId(metadata_id)})
+        metadata_one = await self.collection_metadata.find_one({"_id": ObjectId(metadata_id)})
         if metadata_one is None:
             raise HTTPException(status_code=404, detail="Metadata not found")
         metadata_one["_id"] = str(metadata_one["_id"])
         ###
         
         # 3. metadata에서 권한 삭제
-        await collection_metadata.update_one(
+        await self.collection_metadata.update_one(
             {"_id": ObjectId(metadata_id)},
             {
                 "$pull": {
@@ -336,7 +340,7 @@ class ImageExtraService:
         
         # 4. imagePermissions 에서 권한 삭제
         for user_id in request.user_id_list:
-            await collection_image_permissions.update_one(
+            await self.collection_image_permissions.update_one(
                 {},
                 {
                     "$pull": {
@@ -346,25 +350,25 @@ class ImageExtraService:
             )
         
         # 업데이트된 user 데이터 다시 가져오기
-        permission_datas = await collection_image_permissions.find_one()
+        permission_datas = await self.collection_image_permissions.find_one()
         
         # 빈 배열이 된 태그 필드 삭제
         for user_id, images in permission_datas.get("user", {}).items():
             if not images:  # 빈 배열인 경우
-                await collection_image_permissions.update_one(
+                await self.collection_image_permissions.update_one(
                     {},
                     {"$unset": {f"user.{user_id}": ""}}
                 )
         
         ### images, matadata
         image_id = request.image_id
-        image_one = await collection_images.find_one({"_id": ObjectId(image_id)})
+        image_one = await self.collection_images.find_one({"_id": ObjectId(image_id)})
         if image_one is None:
             raise HTTPException(status_code=404, detail="Image not found")
         image_one["_id"] = str(image_one["_id"])
 
         metadata_id = image_one.get("metadataId")
-        metadata_one = await collection_metadata.find_one({"_id": ObjectId(metadata_id)})
+        metadata_one = await self.collection_metadata.find_one({"_id": ObjectId(metadata_id)})
         if metadata_one is None:
             raise HTTPException(status_code=404, detail="Metadata not found")
         metadata_one["_id"] = str(metadata_one["_id"])
@@ -414,20 +418,20 @@ class ImageExtraService:
         
         ### images, matadata
         image_id = request.image_id
-        image_one = await collection_images.find_one({"_id": ObjectId(image_id)})
+        image_one = await self.collection_images.find_one({"_id": ObjectId(image_id)})
         if image_one is None:
             raise HTTPException(status_code=404, detail="Image not found")
         image_one["_id"] = str(image_one["_id"])
 
         metadata_id = image_one.get("metadataId")
-        metadata_one = await collection_metadata.find_one({"_id": ObjectId(metadata_id)})
+        metadata_one = await self.collection_metadata.find_one({"_id": ObjectId(metadata_id)})
         if metadata_one is None:
             raise HTTPException(status_code=404, detail="Metadata not found")
         metadata_one["_id"] = str(metadata_one["_id"])
         ###
         
         # 3. metadata에서 권한 삭제
-        await collection_metadata.update_one(
+        await self.collection_metadata.update_one(
             {"_id": ObjectId(metadata_id)},
             {
                 "$pull": {
@@ -438,7 +442,7 @@ class ImageExtraService:
         
         # 4. imagePermissions 에서 권한 삭제
         for department_id in request.department_name_list:
-            await collection_image_permissions.update_one(
+            await self.collection_image_permissions.update_one(
                 {},
                 {
                     "$pull": {
@@ -448,25 +452,25 @@ class ImageExtraService:
             )
         
         # 업데이트된 user 데이터 다시 가져오기
-        permission_datas = await collection_image_permissions.find_one()
+        permission_datas = await self.collection_image_permissions.find_one()
         
         # 빈 배열이 된 태그 필드 삭제
         for department_name, images in permission_datas.get("department", {}).items():
             if not images:  # 빈 배열인 경우
-                await collection_image_permissions.update_one(
+                await self.collection_image_permissions.update_one(
                     {},
                     {"$unset": {f"department.{department_name}": ""}}
                 )
         
         ### images, matadata
         image_id = request.image_id
-        image_one = await collection_images.find_one({"_id": ObjectId(image_id)})
+        image_one = await self.collection_images.find_one({"_id": ObjectId(image_id)})
         if image_one is None:
             raise HTTPException(status_code=404, detail="Image not found")
         image_one["_id"] = str(image_one["_id"])
 
         metadata_id = image_one.get("metadataId")
-        metadata_one = await collection_metadata.find_one({"_id": ObjectId(metadata_id)})
+        metadata_one = await self.collection_metadata.find_one({"_id": ObjectId(metadata_id)})
         if metadata_one is None:
             raise HTTPException(status_code=404, detail="Metadata not found")
         metadata_one["_id"] = str(metadata_one["_id"])

@@ -1,9 +1,10 @@
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Form, Security, BackgroundTasks, Query, Body
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from typing import List, Optional
+from typing import List
 from sqlalchemy.orm import Session
 
 from configs.mariadb import get_database_mariadb
+from configs.mongodb import get_database_mongodb
 from dto.common_dto import CommonResponse
 from dto.pagination_dto import PaginationDto
 from dto.project_dto import ProjectRequest, ProjectResponse, AddImageRequest, AddFilteringImageRequest
@@ -24,14 +25,15 @@ router = APIRouter(prefix="/project", tags=["Project"])
 async def project(
     project_request: ProjectRequest,
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
-    db : Session = Depends(get_database_mariadb)
+    maria_db : Session = Depends(get_database_mariadb),
+    mongodb : Session = Depends(get_database_mongodb)
 ):
     try:    
         access_token = credentials.credentials
-        jwt = JWTManage(db)
+        jwt = JWTManage(maria_db)
         user_id = jwt.verify_token(access_token)["user_id"]
         
-        project_service = ProjectService(db)
+        project_service = ProjectService(maria_db, mongodb)
 
         response = await project_service.create_project(user_id, project_request)
 
@@ -53,14 +55,15 @@ async def project_list(
     page: int = 1,
     limit: int = 10,
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
-    db : Session = Depends(get_database_mariadb)
+    maria_db : Session = Depends(get_database_mariadb),
+    mongodb : Session = Depends(get_database_mongodb)
 ):
     try:
         access_token = credentials.credentials
-        jwt = JWTManage(db)
+        jwt = JWTManage(maria_db)
         user_id = jwt.verify_token(access_token)["user_id"]
         
-        project_service = ProjectService(db)
+        project_service = ProjectService(maria_db, mongodb)
 
         projects_list = await project_service.get_project_list(user_id, model_name, page, limit)
 
@@ -79,10 +82,11 @@ async def project_list(
 async def delete_project(
     project_id: str,
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
-    db : Session = Depends(get_database_mariadb)
+    maria_db : Session = Depends(get_database_mariadb),
+    mongodb : Session = Depends(get_database_mongodb)
 ):
     try:
-        project_service = ProjectService(db)
+        project_service = ProjectService(maria_db, mongodb)
         await project_service.delete_project(project_id)
         return CommonResponse(
             status=200,
@@ -101,12 +105,13 @@ async def search_project_images(
     page: int = Query(1, ge=1, description="페이지 번호"),
     limit: int = Query(10, ge=1, le=100, description="페이지당 항목 수"),
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
-    db: Session = Depends(get_database_mariadb)
+    maria_db: Session = Depends(get_database_mariadb),
+    mongodb : Session = Depends(get_database_mongodb)
 ):
     try:
         conditions = conditions or SearchRequest()
 
-        project_service = ProjectService(db)
+        project_service = ProjectService(maria_db, mongodb)
 
         result = await project_service.search_project_images(
             project_id, 
@@ -131,17 +136,18 @@ async def image_upload(
     upload_request: str = Form(...),
     files: list[UploadFile] | None = Form([]),
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
-    db : Session = Depends(get_database_mariadb),
+    maria_db : Session = Depends(get_database_mariadb),
+    mongodb : Session = Depends(get_database_mongodb)
 ):
     try:
         access_token = credentials.credentials
-        jwt = JWTManage(db)
+        jwt = JWTManage(maria_db)
         user_id = jwt.verify_token(access_token)["user_id"]
 
         parsed_request = json.loads(upload_request)
         upload_request_obj = UploadRequest(**parsed_request)
 
-        upload = UploadService(db)
+        upload = UploadService(maria_db, mongodb)
         file_contents = []
 
         if files:
@@ -164,10 +170,11 @@ async def image_upload(
 @router.get("/model/list", description="Model List 호출")
 async def model_list(
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
-    db : Session = Depends(get_database_mariadb)
+    maria_db : Session = Depends(get_database_mariadb),
+    mongodb : Session = Depends(get_database_mongodb)
 ):
     try:
-        project_service = ProjectService(db)
+        project_service = ProjectService(maria_db, mongodb)
         model_list = await project_service.get_model_list()
         return CommonResponse(
             status=200,
@@ -184,9 +191,11 @@ async def image_add(
     background_tasks: BackgroundTasks,
     request: AddImageRequest,
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
+    maria_db : Session = Depends(get_database_mariadb),
+    mongodb : Session = Depends(get_database_mongodb)
 ):
     try:
-        project_service = ProjectService()
+        project_service = ProjectService(maria_db, mongodb)
         background_tasks.add_task(project_service.get_add_image, request)
         return
     except HTTPException as http_exc:
@@ -200,10 +209,11 @@ async def filter_image_add(
     project_id: str,
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
     conditions: AddFilteringImageRequest = Body(default=None),
-    db: Session = Depends(get_database_mariadb)
+    maria_db : Session = Depends(get_database_mariadb),
+    mongodb : Session = Depends(get_database_mongodb)
 ):
     try:    
-        project_service = ProjectService(db)
+        project_service = ProjectService(maria_db, mongodb)
 
         response = await project_service.add_filter_image(
             project_id,
@@ -224,10 +234,11 @@ async def filter_image_add(
 async def get_image_detail(
     request : SearchProjectImageRequest = Body(default=None),
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
-    db: Session = Depends(get_database_mariadb)
+    maria_db : Session = Depends(get_database_mariadb),
+    mongodb : Session = Depends(get_database_mongodb)
 ):
     try:
-        project_service = ProjectService(db)
+        project_service = ProjectService(maria_db, mongodb)
         response = await project_service.read_image_detail(request.project_id, request.image_id, request.conditions)
 
         return CommonResponse(

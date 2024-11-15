@@ -7,16 +7,6 @@ from bson import ObjectId
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from dto.search_dto import SearchCondition, ImageSearchResponse
-from configs.mongodb import (
-    collection_tag_images, 
-    collection_metadata, 
-    collection_images,
-    collection_project_images,
-    collection_project_histories, 
-    collection_project_permissions, 
-    collection_projects,
-    collection_image_models
-)
 
 from dto.pagination_dto import PaginationDto
 from dto.project_dto import ProjectRequest, ProjectResponse, AddImageRequest, AddFilteringImageResponse
@@ -26,8 +16,17 @@ from typing import List
 
 # 1. 프로젝트 생성, 삭제 및 불러오기
 class ProjectService:
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, mongodb: Session):
         self.db = db
+        self.mongodb = mongodb
+        self.collection_projects = mongodb.get_collection("projects")
+        self.collection_project_permissions = mongodb.get_collection("projectPermissions")
+        self.collection_tag_images = mongodb.get_collection("tagImages")
+        self.collection_metadata = mongodb.get_collection("metadata")
+        self.collection_images = mongodb.get_collection("images")
+        self.collection_project_images = mongodb.get_collection("projectImages")
+        self.collection_project_histories = mongodb.get_collection("projectHistories")
+        self.collection_image_models = mongodb.get_collection("imageModels")
     
     # 1-1. Project 생성
     async def create_project(self, creator_user_id: int, request: ProjectRequest) -> str:
@@ -52,10 +51,10 @@ class ProjectService:
             'updatedAt':get_current_time()
         }
         
-        new_project = await collection_projects.insert_one(project)
+        new_project = await self.collection_projects.insert_one(project)
         project_id = str(new_project.inserted_id)
         
-        document = await collection_project_permissions.find_one()
+        document = await self.collection_project_permissions.find_one()
         
         # 문서가 없을 경우 새로운 문서 생성
         if document is None:
@@ -63,25 +62,25 @@ class ProjectService:
                 "user": {},
                 "department": {}
             }
-            await collection_project_permissions.insert_one(new_document)
+            await self.collection_project_permissions.insert_one(new_document)
             document = new_document
 
         if str(creator_user_id) not in document.get("user", {}):
-            await collection_project_permissions.update_one(
+            await self.collection_project_permissions.update_one(
                 {},
                 {"$set": {f"user.{str(creator_user_id)}": {"view": [], "edit": []}}}
             )
-        await collection_project_permissions.update_one(
+        await self.collection_project_permissions.update_one(
             {},
             {"$addToSet": {f"user.{str(creator_user_id)}.edit": project_id}}
         )
 
         if department_name not in document.get("department", {}):
-            await collection_project_permissions.update_one(
+            await self.collection_project_permissions.update_one(
                 {},
                 {"$set": {f"department.{department_name}": {"view": [], "edit": []}}}
             )
-        await collection_project_permissions.update_one(
+        await self.collection_project_permissions.update_one(
             {},
             {"$addToSet": {f"department.{department_name}.edit": project_id}}
         )
@@ -90,12 +89,12 @@ class ProjectService:
             user_key = f"user.{user_id}"
             if user_id not in document.get("user", {}):
                 # `user` 내에 해당 ID가 없으면 새로운 리스트 추가
-                await collection_project_permissions.update_one(
+                await self.collection_project_permissions.update_one(
                     {},
                     {"$set": {user_key: {"view": [], "edit": []}}}
                 )
             # view 리스트에 project_id 추가
-            await collection_project_permissions.update_one(
+            await self.collection_project_permissions.update_one(
                 {},
                 {"$addToSet": {f"{user_key}.view": project_id}}
             )
@@ -103,11 +102,11 @@ class ProjectService:
         for user_id in request.accesscontrol.edit_users:
             user_key = f"user.{user_id}"
             if user_id not in document.get("user", {}):
-                await collection_project_permissions.update_one(
+                await self.collection_project_permissions.update_one(
                     {},
                     {"$set": {user_key: {"view": [], "edit": []}}}
                 )
-            await collection_project_permissions.update_one(
+            await self.collection_project_permissions.update_one(
                 {},
                 {"$addToSet": {f"{user_key}.edit": project_id}}
             )
@@ -117,12 +116,12 @@ class ProjectService:
             department_key = f"department.{department}"
             if department not in document.get("department", {}):
                 # `department` 내에 해당 부서가 없으면 새로운 리스트 추가
-                await collection_project_permissions.update_one(
+                await self.collection_project_permissions.update_one(
                     {"_id": document["_id"]},
                     {"$set": {department_key: {"view": [], "edit": []}}}
                 )
             # view 리스트에 project_id 추가
-            await collection_project_permissions.update_one(
+            await self.collection_project_permissions.update_one(
                 {"_id": document["_id"]},
                 {"$addToSet": {f"{department_key}.view": project_id}}
             )
@@ -130,11 +129,11 @@ class ProjectService:
         for department in request.accesscontrol.edit_departments:
             department_key = f"department.{department}"
             if department not in document.get("department", {}):
-                await collection_project_permissions.update_one(
+                await self.collection_project_permissions.update_one(
                     {"_id": document["_id"]},
                     {"$set": {department_key: {"view": [], "edit": []}}}
                 )
-            await collection_project_permissions.update_one(
+            await self.collection_project_permissions.update_one(
                 {"_id": document["_id"]},
                 {"$addToSet": {f"{department_key}.edit": project_id}}
             )
@@ -158,8 +157,8 @@ class ProjectService:
         project_department = self.db.query(Departments).filter(Departments.department_id == user_department.department_id).first()
         department_name = project_department.department_name if project_department else "None"
 
-        user_permissions = await collection_project_permissions.find_one({f"user.{user_id}": {"$exists": True}})
-        department_permissions = await collection_project_permissions.find_one({f"department.{department_name}": {"$exists": True}})
+        user_permissions = await self.collection_project_permissions.find_one({f"user.{user_id}": {"$exists": True}})
+        department_permissions = await self.collection_project_permissions.find_one({f"department.{department_name}": {"$exists": True}})
 
         viewable_project_ids_user = set()
         user_edit_permissions = set()
@@ -217,7 +216,7 @@ class ProjectService:
             query["$and"].append({"modelName": model_name})
         
         # MongoDB 쿼리 실행 및 페이지네이션
-        projects = await collection_projects.find(query).skip(skip).limit(limit).to_list(length=limit)
+        projects = await self.collection_projects.find(query).skip(skip).limit(limit).to_list(length=limit)
         projects.sort(key=lambda x: x['updatedAt'], reverse=True)
 
         # 결과 형식 맞추기
@@ -239,7 +238,7 @@ class ProjectService:
             for project in projects
         ]
         
-        total_projects = await collection_projects.count_documents(query)
+        total_projects = await self.collection_projects.count_documents(query)
         total_pages = (total_projects + limit - 1) // limit
 
         response = {
@@ -255,61 +254,61 @@ class ProjectService:
     # 1-3. 프로젝트 삭제
     async def delete_project(self, project_id: str):
         # 1. projects에서 삭제
-        delete_projects = await collection_projects.delete_one({"_id": ObjectId(project_id)})
+        delete_projects = await self.collection_projects.delete_one({"_id": ObjectId(project_id)})
         if delete_projects.deleted_count == 0:
             raise HTTPException(status_code=404, detail="프로젝트를 찾을 수 없습니다.")
         
         # 2. projectPermissions에서 삭제
-        permissions = await collection_project_permissions.find_one()
+        permissions = await self.collection_project_permissions.find_one()
         users = permissions.get("user")
         departments = permissions.get("department")
         for i in users:
-            await collection_project_permissions.update_many(
+            await self.collection_project_permissions.update_many(
                 {},
                 {"$pull": {f"user.{i}.view": project_id, f"user.{i}.edit": project_id}}
             )
         for j in departments:
-            await collection_project_permissions.update_many(
+            await self.collection_project_permissions.update_many(
                 {},
                 {"$pull": {f"department.{j}.view": project_id, f"department.{j}.edit": project_id}}
             )
         
         # 3. projectHistories에서 삭제
-        await collection_project_histories.update_one(
+        await self.collection_project_histories.update_one(
             {},
             {"$pull": {f"project.{project_id}": {"$exists": True}}}
         )
 
         # 4. metadata 에서 삭제
-        projectImages = await collection_project_images.find_one({"project": project_id})
+        projectImages = await self.collection_project_images.find_one({"project": project_id})
         if projectImages and "project" in projectImages and projectImages["project"]:
             for m in projectImages["project"]:
-                images = await collection_images.find_one({"_id": ObjectId(m)})
+                images = await self.collection_images.find_one({"_id": ObjectId(m)})
                 if images and "metadataId" in images:
                     imageMetadataId = images["metadataId"]
-                    await collection_metadata.update_one(
+                    await self.collection_metadata.update_one(
                         {"_id": ObjectId(imageMetadataId)},
                         {"$pull": {"metadata.accessControl.projects": project_id}}
                     )
 
         # 5. projectImages에서 삭제
-        await collection_project_images.update_one(
+        await self.collection_project_images.update_one(
             {},
             {"$pull": {f"project.{project_id}": {"$exists": True}}}
         )
 
         # 6. 빈 배열 삭제
-        project_histories = await collection_project_histories.find_one()
+        project_histories = await self.collection_project_histories.find_one()
         for project, image in project_histories.get("project", {}).items():
             if not image:
-                await collection_project_histories.update_one(
+                await self.collection_project_histories.update_one(
                     {},
                     {"$unset": {f"project.{project}": ""}}
                 )
-        project_images = await collection_project_images.find_one()
+        project_images = await self.collection_project_images.find_one()
         for project, image in project_images.get("project", {}).items():
             if not image:
-                await collection_project_images.update_one(
+                await self.collection_project_images.update_one(
                     {},
                     {"$unset": {f"project.{project}": ""}}
                 )
@@ -362,7 +361,7 @@ class ProjectService:
     async def search_project_images(self, project_id: str, search_conditions: List[SearchCondition] | None, page: int = 1,limit: int = 10) -> PaginationDto[ImageSearchResponse]:
         try:
             # 1. project_images 가져오기
-            project_images = await collection_project_images.find_one({})
+            project_images = await self.collection_project_images.find_one({})
             if not project_images or "project" not in project_images:
                 return {
                     "data": ImageSearchResponse(images={}),
@@ -383,7 +382,7 @@ class ProjectService:
                 }
             
             # 2. conditions 처리
-            tag_doc = await collection_tag_images.find_one({})
+            tag_doc = await self.collection_tag_images.find_one({})
             if not tag_doc:
                 return {
                     "data": ImageSearchResponse(images={}),
@@ -421,9 +420,9 @@ class ProjectService:
                     "total_pages": 1
                 }
             
-            project_model = await collection_projects.find_one({"_id": ObjectId(project_id)})
+            project_model = await self.collection_projects.find_one({"_id": ObjectId(project_id)})
             
-            image_model_mapping = await collection_image_models.find_one({})
+            image_model_mapping = await self.collection_image_models.find_one({})
             matching_images = []
             if project_model["modelName"] in image_model_mapping["models"]:
                 for image_id in image_model_mapping["models"][project_model["modelName"]]:
@@ -434,16 +433,16 @@ class ProjectService:
             object_ids = [ObjectId(id) for id in matching_images]
             base_query = {"_id": {"$in": object_ids}}
             
-            total_count = await collection_images.count_documents(base_query)
+            total_count = await self.collection_images.count_documents(base_query)
             total_pages = (total_count + limit - 1) // limit
             total_pages = 1 if total_pages == 0 else total_pages
 
             skip = (page - 1) * limit
-            paginated_images = await collection_images.find(base_query).sort('createdAt', 1).skip(skip).limit(limit).to_list(length=None)
+            paginated_images = await self.collection_images.find(base_query).sort('createdAt', 1).skip(skip).limit(limit).to_list(length=None)
 
             # 4. metadata 한 번에 조회
             metadata_ids = [ObjectId(image["metadataId"]) for image in paginated_images]
-            metadata_docs = await collection_metadata.find(
+            metadata_docs = await self.collection_metadata.find(
                 {"_id": {"$in": metadata_ids}},
                 {"fileList": 1}
             ).to_list(length=None)
@@ -482,12 +481,12 @@ class ProjectService:
     
     # 4. 선택한 이미지를 project에 저장
     async def get_add_image(self, request: AddImageRequest):
-        document = collection_project_images.find_one({"project." + request.project_id: {"$exists": True}})
+        document = self.collection_project_images.find_one({"project." + request.project_id: {"$exists": True}})
     
         if not document:
             raise HTTPException(status_code=404, detail="Project ID not found")
 
-        result = collection_project_images.update_one(
+        result = self.collection_project_images.update_one(
             {"_id": document["_id"]},
             {"$set": {f"project.{request.project_id}": request.image_ids}}
         )
@@ -502,7 +501,7 @@ class ProjectService:
     async def add_filter_image(self, project_id: str, project_conditions: List[SearchCondition] | None) -> AddFilteringImageResponse:
         try:
             # 비동기 결과를 먼저 받아온 후 접근
-            tag_doc = await collection_tag_images.find_one({})
+            tag_doc = await self.collection_tag_images.find_one({})
             if not tag_doc or "tag" not in tag_doc:
                 return {
                     "project_id": project_id,
@@ -593,13 +592,13 @@ class ProjectService:
 ) -> ImageDetailResponse:
 
         # images, metadata
-        image_one = await collection_images.find_one({"_id": ObjectId(image_id)})
+        image_one = await self.collection_images.find_one({"_id": ObjectId(image_id)})
         if image_one is None:
             raise HTTPException(status_code=404, detail="Image not found")
         image_one["_id"] = str(image_one["_id"])
 
         metadata_id = image_one.get("metadataId")
-        metadata_one = await collection_metadata.find_one({"_id": ObjectId(metadata_id)})
+        metadata_one = await self.collection_metadata.find_one({"_id": ObjectId(metadata_id)})
         if metadata_one is None:
             raise HTTPException(status_code=404, detail="Metadata not found")
         metadata_one["_id"] = str(metadata_one["_id"])
@@ -632,7 +631,7 @@ class ProjectService:
             departments=departments
         )
         
-        project = await collection_project_images.find_one({"project." + project_id: {"$exists": True}})
+        project = await self.collection_project_images.find_one({"project." + project_id: {"$exists": True}})
         if project is None:
             raise HTTPException(status_code=404, detail="Project not found")
         
@@ -640,7 +639,7 @@ class ProjectService:
         images = project.get("project", {}).get(project_id, [])
         
         if search_conditions:
-            tag_doc = await collection_tag_images.find_one({})
+            tag_doc = await self.collection_tag_images.find_one({})
             final_matching_ids = set()
             for condition in search_conditions:
                 group_result = await self._process_condition_group(tag_doc, condition)

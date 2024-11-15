@@ -5,6 +5,7 @@ from typing import List
 
 from dto.common_dto import CommonResponse
 from configs.mariadb import get_database_mariadb
+from configs.mongodb import get_database_mongodb
 from services.image.image_extra_service import ImageExtraService
 from dto.image_detail_dto import ImageUserPermissionRemoveRequest, ImageDepartmentPermissionRemoveRequest, ImageDepartmentPermissionAddRequest, ImageUserPermissionAddRequest
 
@@ -17,10 +18,11 @@ router = APIRouter(prefix="/image/permission", tags=["Image"])
 async def add_department_permission(
     request: ImageDepartmentPermissionAddRequest,
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
-    db: Session = Depends(get_database_mariadb)
+    maria_db : Session = Depends(get_database_mariadb),
+    mongodb : Session = Depends(get_database_mongodb)
 ):
     try:    
-        image_extra_service = ImageExtraService(db)
+        image_extra_service = ImageExtraService(maria_db, mongodb)
 
         response = await image_extra_service.add_department_image_permission(request)
 
@@ -38,10 +40,11 @@ async def add_department_permission(
 async def add_user_permission(
     request: ImageUserPermissionAddRequest,
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
-    db: Session = Depends(get_database_mariadb)
+    maria_db : Session = Depends(get_database_mariadb),
+    mongodb : Session = Depends(get_database_mongodb)
 ):
     try:    
-        image_extra_service = ImageExtraService(db)
+        image_extra_service = ImageExtraService(maria_db, mongodb)
 
         response = await image_extra_service.add_user_image_permission(request)
 
@@ -59,10 +62,11 @@ async def add_user_permission(
 async def remove_user_permission(
     request: ImageUserPermissionRemoveRequest,
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
-    db: Session = Depends(get_database_mariadb)
+    maria_db : Session = Depends(get_database_mariadb),
+    mongodb : Session = Depends(get_database_mongodb)
 ):
     try:
-        image_extra_service = ImageExtraService(db)
+        image_extra_service = ImageExtraService(maria_db, mongodb)
 
         response = await image_extra_service.remove_user_image_permission(request)
 
@@ -80,10 +84,11 @@ async def remove_user_permission(
 async def remove_department_permission(
     request: ImageDepartmentPermissionRemoveRequest,
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
-    db: Session = Depends(get_database_mariadb)
+    maria_db : Session = Depends(get_database_mariadb),
+    mongodb : Session = Depends(get_database_mongodb)
 ):
     try:
-        image_extra_service = ImageExtraService(db)
+        image_extra_service = ImageExtraService(maria_db, mongodb)
 
         response = await image_extra_service.remove_department_image_permission(request)
 

@@ -7,16 +7,21 @@ from dto.common_dto import CommonResponse
 from dto.users_dto import UserSignUp, UserSignIn, TokenResponse
 from models.mariadb_users import Users
 from configs.mariadb import get_database_mariadb
+from configs.mongodb import get_database_mongodb
 
 security_scheme = HTTPBearer()
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 @router.post("/signup", response_model=CommonResponse)
-async def signup(user_data: UserSignUp, db: Session = Depends(get_database_mariadb)):
+async def signup(
+    user_data: UserSignUp,
+    maria_db: Session = Depends(get_database_mariadb),
+    mongodb: Session = Depends(get_database_mongodb)
+    ):
     try:
-        user_create = UserCreate(db)
-        email_validate = EmailValidate(db)
+        user_create = UserCreate(maria_db)
+        email_validate = EmailValidate(maria_db, mongodb)
         
         temp_user_data = await user_create.create_temp_user(user_data)
         await email_validate.send_verification_email(user_data.email, temp_user_data)
@@ -32,11 +37,16 @@ async def signup(user_data: UserSignUp, db: Session = Depends(get_database_maria
         
 
 @router.post("/verification", response_model=CommonResponse[TokenResponse])
-async def verification(email: str, code: str, db: Session = Depends(get_database_mariadb)):
+async def verification(
+    email: str, 
+    code: str, 
+    maria_db: Session = Depends(get_database_mariadb), 
+    mongodb: Session = Depends(get_database_mongodb)
+    ):
     try:
-        email_validate = EmailValidate(db)
+        email_validate = EmailValidate(maria_db, mongodb)
         user = await email_validate.verify_and_create_user(email, code)
-        jwt_manage = JWTManage(db)
+        jwt_manage = JWTManage(maria_db)
         
         token_data = {
             "access_token": jwt_manage.create_access_token(user),
@@ -53,10 +63,14 @@ async def verification(email: str, code: str, db: Session = Depends(get_database
         raise HTTPException(status_code=400, detail=str(e))
         
 @router.post("/login", response_model=CommonResponse[TokenResponse])
-async def login(login_data: UserSignIn, db: Session = Depends(get_database_mariadb)):
+async def login(
+    login_data: UserSignIn, 
+    maria_db: Session = Depends(get_database_mariadb), 
+    mongodb: Session = Depends(get_database_mongodb)
+    ):
     try:
-        jwt_manage = JWTManage(db)
-        user_login = UserLogin(db, jwt_manage)
+        jwt_manage = JWTManage(maria_db)
+        user_login = UserLogin(maria_db, jwt_manage)
         
         token_data = await user_login.login(login_data)
         return CommonResponse(
@@ -69,9 +83,13 @@ async def login(login_data: UserSignIn, db: Session = Depends(get_database_maria
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/logout", response_model=CommonResponse)
-async def logout(credentials: HTTPAuthorizationCredentials = Security(security_scheme), db: Session = Depends(get_database_mariadb)):
+async def logout(
+    credentials: HTTPAuthorizationCredentials = Security(security_scheme), 
+    maria_db: Session = Depends(get_database_mariadb), 
+    mongodb: Session = Depends(get_database_mongodb)
+    ):
     try:        
-        user_logout = UserLogout(db)
+        user_logout = UserLogout(maria_db)
         logout_data = await user_logout.logout(credentials.credentials)
         
         return CommonResponse(
@@ -85,16 +103,20 @@ async def logout(credentials: HTTPAuthorizationCredentials = Security(security_s
 
 # 토큰 재발급
 @router.post("/refresh", response_model=CommonResponse[TokenResponse])
-async def refresh_token(credentials: HTTPAuthorizationCredentials = Security(security_scheme), db: Session = Depends(get_database_mariadb)):
+async def refresh_token(
+    credentials: HTTPAuthorizationCredentials = Security(security_scheme), 
+    maria_db: Session = Depends(get_database_mariadb), 
+    mongodb: Session = Depends(get_database_mongodb)
+    ):
     try:
-        jwt_manage = JWTManage(db)
+        jwt_manage = JWTManage(maria_db)
         payload = jwt_manage.verify_token(credentials.credentials)
         
         if payload.get("token_type") != "refresh":
             raise HTTPException(status_code=401, detail="유효하지 않은 refreshToken입니다.")
             
         # 새로운 토큰 발급을 위한 사용자 정보 조회
-        user = db.query(Users).filter(Users.user_id == payload["user_id"]).first()
+        user = maria_db.query(Users).filter(Users.user_id == payload["user_id"]).first()
         
         if not user:
             raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")

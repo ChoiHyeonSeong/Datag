@@ -7,6 +7,7 @@ from dto.pagination_dto import PaginationDto
 from dto.history_dto import HistoryListData
 from dto.common_dto import CommonResponse
 from configs.mariadb import get_database_mariadb
+from configs.mongodb import get_database_mongodb
 from models.history_models import HistoryData
 from services.auth.auth_service import JWTManage
 from services.project.history_service import HistoryService
@@ -21,14 +22,15 @@ async def get_history_list(
     page: int = 1,
     limit: int = 10,
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
-    db: Session = Depends(get_database_mariadb)
+    marda_db: Session = Depends(get_database_mariadb),
+    mongodb: Session = Depends(get_database_mongodb)
 ):
     try:
         access_token = credentials.credentials
-        jwt = JWTManage(db)
+        jwt = JWTManage(marda_db)
         user_id = jwt.verify_token(access_token)["user_id"]
 
-        history_service = HistoryService(db)
+        history_service = HistoryService(marda_db, mongodb)
         results = await history_service.get_histories(project_id, user_id, page, limit)
 
         return CommonResponse[PaginationDto[List[HistoryListData]]](
@@ -45,10 +47,11 @@ async def get_history_list(
 async def get_history_detail(
     history_id: str,
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
-    db: Session = Depends(get_database_mariadb)
+    marda_db: Session = Depends(get_database_mariadb),
+    mongodb: Session = Depends(get_database_mongodb)
 ):
     try:
-        history_service = HistoryService(db)
+        history_service = HistoryService(marda_db, mongodb)
         results = await history_service.get_history_detail(history_id)
 
         return CommonResponse[HistoryData](
@@ -64,10 +67,11 @@ async def get_history_detail(
 async def delete_history(
     history_id: str,
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
-    db: Session = Depends(get_database_mariadb)
+    marda_db: Session = Depends(get_database_mariadb),
+    mongodb: Session = Depends(get_database_mongodb)
 ):
     try:
-        history_service = HistoryService(db)
+        history_service = HistoryService(marda_db, mongodb)
         await history_service.delete_history(history_id)
 
         return CommonResponse[str](

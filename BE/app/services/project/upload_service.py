@@ -13,7 +13,6 @@ import json
 from bson import ObjectId
 from dotenv import load_dotenv
 
-from configs.mongodb import collection_upload_batches, collection_user_upload_batches, collection_projects
 from models.uploadbatch_models import UploadBatch
 from models.mariadb_users import Departments, Users
 from dto.uploads_dto import UploadRequest
@@ -23,8 +22,11 @@ BUCKENAME = 'ssafy-project'
 
 load_dotenv()
 class UploadService:
-    def __init__(self, db : Session):
+    def __init__(self, db : Session, mongodb: Session):
         self.db = db
+        self.collection_upload_batches = mongodb.get_collection("uploadBatches")
+        self.collection_user_upload_batches = mongodb.get_collection("userUploadBatches")
+        self.collection_projects = mongodb.get_collection("projects")
 
     def is_image(self, filename : str):
         mime_type, _ = mimetypes.guess_type(filename)
@@ -37,7 +39,7 @@ class UploadService:
             raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
         department_id = user_department.department_id
 
-        project = await collection_projects.find_one({"_id": ObjectId(upload_request.project_id)})
+        project = await self.collection_projects.find_one({"_id": ObjectId(upload_request.project_id)})
         task = project.get("task", "")
         model_name = project.get("modelName", "")
 
@@ -65,7 +67,7 @@ class UploadService:
 
             batch_obj = UploadBatch.model_validate(batch_obj)
 
-            result = await collection_upload_batches.insert_one(batch_obj.model_dump())
+            result = await self.collection_upload_batches.insert_one(batch_obj.model_dump())
 
             if result.inserted_id:
                 return str(result.inserted_id)
@@ -212,7 +214,7 @@ class UploadService:
         
     async def _after_save_upload_batch(self, inserted_id: str):
         try:
-            await collection_upload_batches.update_one(
+            await self.collection_upload_batches.update_one(
                 {"_id": ObjectId(inserted_id)},  # ID로 문서 찾기
                 {
                     "$set": {
@@ -227,14 +229,14 @@ class UploadService:
     async def _mapping_user_upload_batches(self, project_id: str, user_id: int, upload_batch_id: str):
         try:
             # 기존 document 확인
-            existing_doc = await collection_user_upload_batches.find_one()
+            existing_doc = await self.collection_user_upload_batches.find_one()
 
             # 문서가 없을 경우 새로운 문서 생성
             if existing_doc is None:
                 new_document = {
                     "project": {}
                 }
-                await collection_user_upload_batches.insert_one(new_document)
+                await self.collection_user_upload_batches.insert_one(new_document)
                 existing_doc = new_document
 
             # project_id와 user_id에 해당하는 배열이 있는지 확인
@@ -246,7 +248,7 @@ class UploadService:
             updated_batches = list(set(current_batches + [upload_batch_id]))
 
             # 업데이트 수행
-            await collection_user_upload_batches.update_one(
+            await self.collection_user_upload_batches.update_one(
                 {},
                 {
                     "$set": {

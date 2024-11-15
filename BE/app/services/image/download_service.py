@@ -8,16 +8,18 @@ from fastapi import HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from configs.mongodb import collection_metadata, collection_features, collection_images
 from dto.download_dto import DownloadRequest
 
 class DownloadService:
-    def __init__(self, db : Session):
+    def __init__(self, db : Session, mongodb: Session):
         self.db = db
-        
+        self.collection_metadata = mongodb.get_collection("metadata")
+        self.collection_features = mongodb.get_collection("features")
+        self.collection_images = mongodb.get_collection("images")
+
     async def get_metadata(self, metadata_id):
         try:
-            metadata = await collection_metadata.find_one({"_id": ObjectId(metadata_id)})
+            metadata = await self.collection_metadata.find_one({"_id": ObjectId(metadata_id)})
             if not metadata:
                 raise ValueError(f"Metadata ID {metadata_id}를 찾을 수 없습니다.")
             metadata["_id"] = str(metadata["_id"])
@@ -27,7 +29,7 @@ class DownloadService:
     
     async def get_feature(self, feature_id):
         try:
-            feature = await collection_features.find_one({"_id": ObjectId(feature_id)})
+            feature = await self.collection_features.find_one({"_id": ObjectId(feature_id)})
             if not feature:
                 raise ValueError(f"Feature ID {feature_id}를 찾을 수 없습니다.")
             feature["_id"] = str(feature["_id"])
@@ -41,7 +43,7 @@ class DownloadService:
             image_list = [ObjectId(image_id) for image_id in request.image_list]
             
             # MongoDB에서 이미지 조회
-            images = await collection_images.find(
+            images = await self.collection_images.find(
                 {"_id": {"$in": image_list}}
             ).to_list(length=None)
 
