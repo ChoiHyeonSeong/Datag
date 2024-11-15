@@ -58,6 +58,7 @@ async def test_create_project(async_client, auth_headers):
     assert "data" in response.json()
     return response.json()["data"]
 
+# 프로젝트 리스트 요청 성공
 @pytest.mark.asyncio
 async def test_get_project_list(async_client, auth_headers):
     params = {
@@ -77,6 +78,7 @@ async def test_get_project_list(async_client, auth_headers):
     assert response.json()["status"] == 200
     assert isinstance(response.json()["data"]['data'], list)
 
+# 프로젝트 삭제 성공
 @pytest.mark.asyncio
 async def test_delete_project(async_client, auth_headers):
     project_id = await test_create_project(async_client, auth_headers)
@@ -85,6 +87,7 @@ async def test_delete_project(async_client, auth_headers):
     
     assert response.status_code == 200
 
+# 부서 리스트 요청 성공
 @pytest.mark.asyncio
 async def test_get_department_list(async_client):
     response = await async_client.get("be/api/department/list")
@@ -92,6 +95,7 @@ async def test_get_department_list(async_client):
     assert response.json()["status"] == 200
     assert isinstance(response.json()["data"], list)
 
+# 사용자 검색 요청 성공
 @pytest.mark.asyncio
 async def test_search_user_name(async_client, auth_headers):
     params = {
@@ -105,6 +109,7 @@ async def test_search_user_name(async_client, auth_headers):
     assert "page" in response.json()["data"]
     assert "total_count" in response.json()["data"]
 
+# 프로젝트에 일괄적으로 이미지 요청 성공
 @pytest.mark.asyncio
 async def test_filter_image_add(async_client, auth_headers):
     # 먼저 프로젝트를 생성
@@ -126,8 +131,6 @@ async def test_filter_image_add(async_client, auth_headers):
         json=add_filtering_image_request,
         headers=auth_headers
     )
-    
-    print(f"Response content: {response.content}")
 
     assert response.status_code == 200
 
