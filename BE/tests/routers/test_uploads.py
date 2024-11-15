@@ -52,8 +52,6 @@ def test_image_upload_success(auth_headers, mock_upload_service, mock_db):
         ("files", ("test1.jpg", b"file_content_1", "image/jpeg")),
         ("files", ("test2.jpg", b"file_content_2", "image/jpeg"))
     ]
-    session = mongo_client.start_session()
-    session.start_transaction()
 
     response = client.post(
         "be/api/project/image/upload",
@@ -61,8 +59,6 @@ def test_image_upload_success(auth_headers, mock_upload_service, mock_db):
         files=files,
         headers=auth_headers
     )
-
-    session.abort_transaction()
 
     assert response.status_code == 200
     assert response.json() == {
@@ -133,17 +129,12 @@ async def test_image_upload_background_task(auth_headers, mock_upload_service, m
         ("files", ("test1.jpg", b"file_content_1", "image/jpeg")),
     ]
 
-    session = mongo_client.start_session()
-    session.start_transaction()
-
     response = await client.post(
         "be/api/project/image/upload",
         data={"upload_request": json.dumps(upload_request)},
         files=files,
         headers=auth_headers
     )
-
-    session.abort_transaction()
 
     assert response.status_code == 200
     

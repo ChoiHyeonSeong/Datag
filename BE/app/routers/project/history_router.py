@@ -4,7 +4,7 @@ from typing import List
 from sqlalchemy.orm import Session
 
 from dto.pagination_dto import PaginationDto
-from dto.history_dto import HistoryListResponse, HistoryListData
+from dto.history_dto import HistoryListData
 from dto.common_dto import CommonResponse
 from configs.mariadb import get_database_mariadb
 from models.history_models import HistoryData
