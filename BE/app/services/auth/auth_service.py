@@ -414,7 +414,7 @@ class UserLogout:
             if not expire_timestamp:
                 raise HTTPException(status_code=400, detail="JWT 토큰 구조가 옳지 않습니다.")
             
-            current_timestamp = int(datetime.now()).timestamp()
+            current_timestamp = int(datetime.now().timestamp())
             ttl = max(1, int(expire_timestamp - current_timestamp))
             
             if ttl > 0:
