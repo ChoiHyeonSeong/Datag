@@ -21,6 +21,7 @@ collection_project_histories = database.get_collection("projectHistories")
 collection_user_upload_batches = database.get_collection("userUploadBatches")
 collection_project_images = database.get_collection("projectImages")
 collection_labels = database.get_collection("imageLabels")
+collection_image_models = database.get_collection("imageModels")
 
 def get_database_mongodb():
     try:
