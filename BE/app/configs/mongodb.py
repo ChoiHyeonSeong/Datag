@@ -23,7 +23,6 @@ collection_project_images = database.get_collection("projectImages")
 collection_labels = database.get_collection("imageLabels")
 collection_image_models = database.get_collection("imageModels")
 
-
 def get_database_mongodb():
     try:
         client.admin.command('ping')

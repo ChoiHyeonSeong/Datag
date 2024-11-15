@@ -523,47 +523,58 @@ class ProjectService:
             tag_and_images = []
             tag_or_images = []
             tag_not_images = []
-            
+
             # AND 연산
-            for i in and_condition:
-                tag_image = tags.get(i)
-                if tag_image:
-                    tag_and_images.append(set(tag_image))
-                    if len(tag_and_images) > 1:
-                        tag_and_images = [tag_and_images[0] & tag_and_images[1]]
-            tag_and_images = list(tag_and_images[0]) if tag_and_images else []
+            if and_condition:
+                tag_and_images = [set(tags.get(i, [])) for i in and_condition]
+                tag_and_images = set.intersection(*tag_and_images) if tag_and_images else set()
+            else:
+                tag_and_images = set()
 
             # OR 연산
-            for i in or_condition:
-                tag_image = tags.get(i)
-                if tag_image:
-                    tag_or_images.append(set(tag_image))
-            tag_or_images = list(set().union(*tag_or_images)) if tag_or_images else []
+            if or_condition:
+                tag_or_images = [set(tags.get(i, [])) for i in or_condition]
+                tag_or_images = set.union(*tag_or_images) if tag_or_images else set()
+            else:
+                tag_or_images = set()
 
             # NOT 연산
-            for i in not_condition:
-                tag_image = tags.get(i)
-                if tag_image:
-                    tag_not_images.extend(tag_image)
-            tag_not_images = set(tag_not_images)
+            if not_condition:
+                tag_not_images = [set(tags.get(i, [])) for i in not_condition]
+                tag_not_images = set.union(*tag_not_images) if tag_not_images else set()
+            else:
+                tag_not_images = set()
 
             # 최종 필터링된 이미지 목록 생성
-            filtered_images = list((set(tag_and_images) & set(tag_or_images)) - tag_not_images)
+            if not tag_or_images and tag_and_images:
+                filtered_images = list((tag_and_images) - tag_not_images)
+            elif not tag_and_images and tag_or_images:
+                filtered_images = list((tag_or_images) - tag_not_images)
+            else:
+                filtered_images = list((tag_and_images & tag_or_images) - tag_not_images)
+            
+            project_one = await collection_projects.find_one({"_id": ObjectId(project_id)})
+            project_modelName = project_one.get("modelName")
+            image_models_one = await collection_image_models.find_one({})
+            image_model_one = image_models_one.get("models").get(f"{project_modelName}")
+
+            final_images = list((set(image_model_one) & set(filtered_images)))
 
             # 필터링된 이미지를 project에 저장
-            for image_id in filtered_images:
-                await collection_project_images.update_one(
-                    {},
-                    {
-                        "$addToSet": {
-                            f"project.{project_id}": image_id
+            if final_images:
+                for image_id in final_images:
+                    await collection_project_images.update_one(
+                        {},
+                        {
+                            "$addToSet": {
+                                f"project.{project_id}": image_id
+                            }
                         }
-                    }
-                )
+                    )
             
             return {
                 "project_id": project_id,
-                "image_list": filtered_images
+                "image_list": final_images
             }
 
         except Exception as e:
