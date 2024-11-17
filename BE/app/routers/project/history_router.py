@@ -56,7 +56,7 @@ async def get_history_detail(
     maria_db: Session = Depends(get_database_mariadb),
     mongodb: Session = Depends(get_database_mongodb)
 ):
-    try:
+    # try:
         access_token = credentials.credentials
         jwt = JWTManage(maria_db)
         user_id = jwt.verify_token(access_token)["user_id"]
@@ -75,10 +75,10 @@ async def get_history_detail(
             status=200,
             data=results
         )
-    except HTTPException as http_exc:
-        raise http_exc
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    # except HTTPException as http_exc:
+    #     raise http_exc
+    # except Exception as e:
+    #     raise HTTPException(status_code=400, detail=str(e))
     
 @router.delete("/delete/{history_id}", description="History 삭제")
 async def delete_history(
