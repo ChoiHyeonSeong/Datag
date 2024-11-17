@@ -6,6 +6,7 @@ from typing import List
 from dto.common_dto import CommonResponse
 from configs.mariadb import get_database_mariadb
 from configs.mongodb import get_database_mongodb
+from services.auth.auth_service import JWTManage, Permissions
 from services.image.image_service import ImageService
 from services.image.image_extra_service import ImageExtraService
 from dto.image_detail_dto import ImageDetailTagRemoveRequest, ImageDetailTagAddRequest
@@ -24,6 +25,16 @@ async def add_image_tag(
     mongodb : Session = Depends(get_database_mongodb)
 ):
     try:
+        access_token = credentials.credentials
+        jwt = JWTManage(maria_db)
+        user_id = jwt.verify_token(access_token)["user_id"]
+        
+        permission = Permissions(maria_db, mongodb)
+        ids = await permission.get_image_permissions(user_id)
+        
+        if request.image_id not in ids:
+            raise HTTPException(status_code=401, detail="Permission Denied")
+        
         image_extra_service = ImageExtraService(maria_db, mongodb)
 
         response = await image_extra_service.add_image_tag(request)
@@ -46,6 +57,16 @@ async def remove_image_tag(
     mongodb : Session = Depends(get_database_mongodb)
 ):
     try:
+        access_token = credentials.credentials
+        jwt = JWTManage(maria_db)
+        user_id = jwt.verify_token(access_token)["user_id"]
+        
+        permission = Permissions(maria_db, mongodb)
+        ids = await permission.get_image_permissions(user_id)
+        
+        if request.image_id not in ids:
+            raise HTTPException(status_code=401, detail="Permission Denied")
+        
         image_extra_service = ImageExtraService(maria_db, mongodb)
 
         response = await image_extra_service.delete_image_tag(request)

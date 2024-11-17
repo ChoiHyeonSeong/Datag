@@ -7,7 +7,7 @@ from dto.analysis_dto import DimensionReductionRequest, AutoDimensionReductionRe
 from dto.common_dto import CommonResponse
 from configs.mariadb import get_database_mariadb
 from configs.mongodb import get_database_mongodb
-from services.auth.auth_service import JWTManage
+from services.auth.auth_service import JWTManage, Permissions
 from services.project.analysis_service import AnalysisService
 
 security_scheme = HTTPBearer()
@@ -26,6 +26,12 @@ async def dimension_reduction(
         access_token = credentials.credentials
         jwt = JWTManage(maria_db)
         user_id = jwt.verify_token(access_token)["user_id"]
+        
+        permission = Permissions(maria_db, mongodb)
+        ids = await permission.get_project_permissions_editor(user_id, request.project_id)
+        
+        if request.project_id not in ids:
+            raise HTTPException(status_code=403, detail="Permission Denied")
 
         analysis_service = AnalysisService(maria_db, mongodb)
         background_tasks.add_task(
@@ -55,6 +61,12 @@ async def dimension_reduction(
         access_token = credentials.credentials
         jwt = JWTManage(maria_db)
         user_id = jwt.verify_token(access_token)["user_id"]
+        
+        permission = Permissions(maria_db, mongodb)
+        ids = await permission.get_project_permissions_editor(user_id, request.project_id)
+        
+        if request.project_id not in ids:
+            raise HTTPException(status_code=403, detail="Permission Denied")
 
         analysis_service = AnalysisService(maria_db, mongodb)
         background_tasks.add_task(

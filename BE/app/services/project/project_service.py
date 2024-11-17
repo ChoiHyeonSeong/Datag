@@ -420,17 +420,8 @@ class ProjectService:
                     "total_pages": 1
                 }
             
-            project_model = await self.collection_projects.find_one({"_id": ObjectId(project_id)})
-            
-            image_model_mapping = await self.collection_image_models.find_one({})
-            matching_images = []
-            if project_model["modelName"] in image_model_mapping["models"]:
-                for image_id in image_model_mapping["models"][project_model["modelName"]]:
-                    if image_id in final_matching_ids:
-                        matching_images.append(image_id)
-
             # 3. 페이지네이션 및 정렬
-            object_ids = [ObjectId(id) for id in matching_images]
+            object_ids = [ObjectId(id) for id in final_matching_ids]
             base_query = {"_id": {"$in": object_ids}}
             
             total_count = await self.collection_images.count_documents(base_query)
@@ -647,7 +638,6 @@ class ProjectService:
 
             images = list(set(images) & final_matching_ids)
 
-        
         if not images:
             raise HTTPException(status_code=404, detail="No images found for this project")
 
