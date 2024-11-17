@@ -60,6 +60,12 @@ async def async_client(test_maria_db, test_mongo_db):
     app.dependency_overrides.clear()
 
 @pytest.fixture(scope="module")
+async def async_real_client():
+    async with LifespanManager(app):
+        async with AsyncClient(app=app, base_url="http://127.0.0.1:8000") as client:
+            yield client
+            
+@pytest.fixture(scope="module")
 async def auth_headers(async_client):
     login_data = {
         "email": "test1@tmail.ws",

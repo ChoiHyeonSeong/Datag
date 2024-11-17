@@ -154,7 +154,7 @@ async def search_project_images(
 async def image_upload(
     background_tasks: BackgroundTasks,
     upload_request: str = Form(...),
-    files: List[UploadFile] = File(...),
+    files: List[UploadFile] = File(None),
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
     maria_db : Session = Depends(get_database_mariadb),
     mongodb : Session = Depends(get_database_mongodb)

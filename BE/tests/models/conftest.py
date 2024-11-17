@@ -28,8 +28,13 @@ async def test_mongo_db():
     client = AsyncIOMotorClient(os.getenv("TEST_MONGO_URL"))
     db = client["testDB"]
     yield db
-    client.drop_database("testDB")
+    # client.drop_database("testDB")
     client.close()
+
+@pytest.fixture(scope="module")
+async def test_real_mongo_db():
+    database = await get_database_mongodb()
+    return database
 
 @pytest.fixture(scope="module")
 def test_maria_db():
@@ -45,31 +50,3 @@ def test_maria_db():
     yield session
     session.close()
     engine.dispose()
-
-@pytest.fixture(scope="module")
-async def async_client(test_maria_db, test_mongo_db):
-    # 의존성 주입
-    app.dependency_overrides[get_database_mariadb] = lambda: test_maria_db
-    app.dependency_overrides[get_database_mongodb] = lambda: test_mongo_db
-
-    async with LifespanManager(app):
-        async with AsyncClient(app=app, base_url="http://127.0.0.1:8000") as client:
-            yield client
-
-    # 테스트 후 의존성 초기화
-    app.dependency_overrides.clear()
-
-@pytest.fixture(scope="module")
-async def auth_headers(async_client):
-    login_data = {
-        "email": "test1@tmail.ws",
-        "password": "1234"
-    }
-    
-    response = await async_client.post("be/api/auth/login", json=login_data)
-    assert response.status_code == 200
-    
-    token = response.json()["data"].get("access_token")
-    assert token is not None, "토큰이 반환되지 않았습니다."
-    
-    return {"Authorization": f"Bearer {token}"}

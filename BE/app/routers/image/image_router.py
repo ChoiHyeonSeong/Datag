@@ -50,7 +50,7 @@ async def get_image_detail(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-
+# 2. 다운로드(image + metadata + feature)
 @router.post("/download")
 async def download(
     request: DownloadRequest, 
@@ -66,7 +66,7 @@ async def download(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-
+# 3. image 전체 조회
 @router.post("/search", response_model=CommonResponse[PaginationDto[List[ImageSearchResponse]]])
 async def search_images(
     conditions: SearchRequest = Body(default=None),

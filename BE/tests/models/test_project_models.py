@@ -28,15 +28,16 @@ async def test_create_project_service(test_maria_db, test_mongo_db):
     )
 
     # 프로젝트 생성 테스트 실행
-    project_id = await project_service.create_project(creator_user_id=1, request=request_data)
+    project_id = await project_service.create_project(creator_user_id=2, request=request_data)
     assert project_id is not None
+    return project_id
 
 @pytest.mark.asyncio
 async def test_get_project_list_service(test_maria_db, test_mongo_db):
     project_service = ProjectService(test_maria_db, test_mongo_db)
 
     # 프로젝트 리스트 조회 테스트
-    projects = await project_service.get_project_list(user_id=1, page=1, limit=5)
+    projects = await project_service.get_project_list(user_id=2, page=1, limit=5)
     assert projects is not None
     assert len(projects['data']) >= 0
 
@@ -58,7 +59,7 @@ async def test_delete_project_service(test_maria_db, test_mongo_db):
         },
         is_private=False
     )
-    project_id = await project_service.create_project(creator_user_id=1, request=request_data)
+    project_id = await project_service.create_project(creator_user_id=2, request=request_data)
     assert project_id is not None
 
     # 삭제 실행

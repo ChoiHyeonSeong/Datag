@@ -40,6 +40,9 @@ class UploadService:
             raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
         department_id = user_department.department_id
 
+        if not files:
+            raise HTTPException(status_code=404, detail="파일을 찾을 수 없습니다.")
+
         project = await self.collection_projects.find_one({"_id": ObjectId(upload_request.project_id)})
         task = project.get("task", "")
         model_name = project.get("modelName", "")
