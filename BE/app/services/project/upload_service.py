@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 from models.uploadbatch_models import UploadBatch
 from models.mariadb_users import Departments, Users
 from dto.uploads_dto import UploadRequest
+from dto.upload_batch_dto import UploadBatchListData
 from configs.s3 import upload_to_s3
 
 BUCKENAME = 'ssafy-project'
@@ -258,3 +259,68 @@ class UploadService:
             )
         except Exception as e:
             raise Exception(f"Failed to update histories: {str(e)}")
+        
+    async def get_upload_batch(self, user_id: int, project_id: str, page: int, limit: int):
+        try:
+            user_upload_batches_doc = await self.collection_user_upload_batches.find_one({})
+            if not user_upload_batches_doc or 'project' not in user_upload_batches_doc:
+                return {
+                    "data": [UploadBatchListData()],
+                    "page": page,
+                    "limit": limit,
+                    "total_count": 0,
+                    "total_pages": 0
+                }
+                
+            project_data = user_upload_batches_doc['project'].get(project_id, {})
+            if not project_data:
+                return {
+                    "data": [UploadBatchListData()],
+                    "page": page,
+                    "limit": limit,
+                    "total_count": 0,
+                    "total_pages": 0
+                }
+            
+            batch_ids = project_data.get(str(user_id), [])
+            if not batch_ids:
+                return {
+                    "data": [UploadBatchListData()],
+                    "page": page,
+                    "limit": limit,
+                    "total_count": 0,
+                    "total_pages": 0
+                }
+
+            total_batches = len(batch_ids)
+            total_pages = (total_batches + limit - 1) // limit
+
+            # 전체 batch_ids를 ObjectId로 변환
+            object_ids = [ObjectId(bid) for bid in batch_ids]
+
+            # MongoDB의 정렬과 페이지네이션 기능 활용
+            batches = await self.collection_upload_batches.find(
+                {"_id": {"$in": object_ids}}
+            ).sort('createdAt', -1).skip((page - 1) * limit).limit(limit).to_list(length=limit)
+
+            return_value = [
+                UploadBatchListData(
+                    batch_id=str(batch["_id"]),
+                    user_id=batch["userId"],
+                    project_id=batch["projectId"],
+                    is_done=batch["isDone"],
+                    created_at=batch["createdAt"],
+                    updated_at=batch["updatedAt"]
+                )
+                for batch in batches
+            ]
+
+            return {
+                "data": return_value,
+                "page": page,
+                "limit": limit,
+                "total_count": total_batches,
+                "total_pages": total_pages
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))

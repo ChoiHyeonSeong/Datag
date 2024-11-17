@@ -249,3 +249,30 @@ async def get_image_detail(
         raise http_exc
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+    
+# 9. 업로드 배치
+@router.get('/image/batch', description="프로젝트 업로드 배치 조회")
+async def get_image_detail(
+    project_id: str,
+    page: int = 1,
+    limit: int = 10,
+    credentials: HTTPAuthorizationCredentials = Security(security_scheme),
+    maria_db : Session = Depends(get_database_mariadb),
+    mongodb : Session = Depends(get_database_mongodb)
+):
+    try:
+        access_token = credentials.credentials
+        jwt = JWTManage(maria_db)
+        user_id = jwt.verify_token(access_token)["user_id"]
+        
+        upload_service = UploadService(maria_db, mongodb)
+        response = await upload_service.get_upload_batch(user_id, project_id, page, limit)
+
+        return CommonResponse(
+            status=200,
+            data=response
+        )
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
