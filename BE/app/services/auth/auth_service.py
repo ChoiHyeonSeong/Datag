@@ -1,4 +1,5 @@
 import json
+from bson import ObjectId
 import jwt
 import redis
 import os
@@ -430,3 +431,139 @@ class UserLogout:
                 status_code=500,
                 detail=f"로그아웃 처리 중 오류가 발생했습니다: {str(e)}"
             )    
+
+## 권한파악
+class Permissions:
+    def __init__(self, db: Session, mongodb: Session):
+        self.db = db
+        self.collection_image_permissions = mongodb.get_collection("imagePermissions")
+        self.collection_project_permissions = mongodb.get_collection("projectPermissions")
+        self.collection_histories = mongodb.get_collection("histories")
+        
+    async def get_image_permissions(self, user_id: int):
+        try:
+            user_department = self.db.query(Users).filter(Users.user_id == user_id).first()
+            if not user_department:
+                raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+            project_department = self.db.query(Departments).filter(Departments.department_id == user_department.department_id).first()
+            
+            department_name = project_department.department_name if project_department else "None"
+            
+            image_permission_doc = await self.collection_image_permissions.find_one({})
+            if not image_permission_doc or ("user" not in image_permission_doc and "department" not in image_permission_doc):
+                raise HTTPException(status_code=403, detail="Permission Denied")
+            
+            if str(user_id) not in image_permission_doc["user"]:
+                raise HTTPException(status_code=403, detail="Permission Denied")
+            
+            if department_name not in image_permission_doc["department"]:
+                raise HTTPException(status_code=403, detail="Permission Denied")
+            
+            image_ids = set()
+
+            image_ids.update(image_permission_doc['user'].get(str(user_id), []))
+            image_ids.update(image_permission_doc['department'].get(department_name, []))
+            
+            return image_ids
+        
+        except HTTPException as http_exc:
+            raise http_exc
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"권한 파악 중 오류가 발생했습니다: {str(e)}"
+            )
+            
+    async def get_project_permissions_viewer(self, user_id: int, project_id: str):
+        try:
+            user_department = self.db.query(Users).filter(Users.user_id == user_id).first()
+            if not user_department:
+                raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+            project_department = self.db.query(Departments).filter(Departments.department_id == user_department.department_id).first()
+            
+            department_name = project_department.department_name if project_department else "None"
+            
+            project_permission_doc = await self.collection_project_permissions.find_one({})
+            if not project_permission_doc or ("user" not in project_permission_doc and "department" not in project_permission_doc):
+                raise HTTPException(status_code=403, detail="Permission Denied")
+            
+            if str(user_id) not in project_permission_doc["user"]:
+                raise HTTPException(status_code=403, detail="Permission Denied")
+            
+            if department_name not in project_permission_doc["department"]:
+                raise HTTPException(status_code=403, detail="Permission Denied")
+            
+            user_permissions = project_permission_doc["user"].get(str(user_id), {"view": [], "edit": []})
+            department_permissions = project_permission_doc["department"].get(department_name, {"view": [], "edit": []})
+            
+            project_ids = set()
+            if "view" in user_permissions:
+                project_ids.update(user_permissions["view"])
+            if "edit" in user_permissions:
+                project_ids.update(user_permissions["edit"])
+            if "view" in department_permissions:
+                project_ids.update(department_permissions["view"])
+            if "edit" in department_permissions:
+                project_ids.update(department_permissions["edit"])
+            
+            return project_ids
+        
+        except HTTPException as http_exc:
+            raise http_exc
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"권한 파악 중 오류가 발생했습니다: {str(e)}"
+            )
+            
+    async def get_project_permissions_editor(self, user_id: int, project_id: str):
+        try:
+            user_department = self.db.query(Users).filter(Users.user_id == user_id).first()
+            if not user_department:
+                raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+            project_department = self.db.query(Departments).filter(Departments.department_id == user_department.department_id).first()
+            
+            department_name = project_department.department_name if project_department else "None"
+            
+            project_permission_doc = await self.collection_project_permissions.find_one({})
+            if not project_permission_doc or ("user" not in project_permission_doc and "department" not in project_permission_doc):
+                raise HTTPException(status_code=403, detail="Permission Denied")
+            
+            if str(user_id) not in project_permission_doc["user"]:
+                raise HTTPException(status_code=403, detail="Permission Denied")
+            
+            if department_name not in project_permission_doc["department"]:
+                raise HTTPException(status_code=403, detail="Permission Denied")
+            
+            user_permissions = project_permission_doc["user"].get(str(user_id), {"view": [], "edit": []})
+            department_permissions = project_permission_doc["department"].get(department_name, {"view": [], "edit": []})
+            
+            project_ids = set()
+            if "edit" in user_permissions:
+                project_ids.update(user_permissions["edit"])
+            if "edit" in department_permissions:
+                project_ids.update(department_permissions["edit"])
+            
+            return project_ids
+        
+        except HTTPException as http_exc:
+            raise http_exc
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"권한 파악 중 오류가 발생했습니다: {str(e)}"
+            )
+            
+    async def _get_history_id_to_project_id(self, history_id: str):
+        try:
+            project_id = await self.collection_images.find_one({"_id": ObjectId(history_id)}).get("projectId", "")
+            
+            return str(project_id)
+        
+        except HTTPException as http_exc:
+            raise http_exc
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"권한 파악 중 오류가 발생했습니다: {str(e)}"
+            )

@@ -9,7 +9,7 @@ from dto.common_dto import CommonResponse
 from configs.mariadb import get_database_mariadb
 from configs.mongodb import get_database_mongodb
 from models.history_models import HistoryData
-from services.auth.auth_service import JWTManage
+from services.auth.auth_service import JWTManage, Permissions
 from services.project.history_service import HistoryService
 
 security_scheme = HTTPBearer()
@@ -22,15 +22,21 @@ async def get_history_list(
     page: int = 1,
     limit: int = 10,
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
-    marda_db: Session = Depends(get_database_mariadb),
+    maria_db: Session = Depends(get_database_mariadb),
     mongodb: Session = Depends(get_database_mongodb)
 ):
     try:
         access_token = credentials.credentials
-        jwt = JWTManage(marda_db)
+        jwt = JWTManage(maria_db)
         user_id = jwt.verify_token(access_token)["user_id"]
+        
+        permission = Permissions(maria_db, mongodb)
+        ids = await permission.get_project_permissions_viewer(user_id, project_id)
+        
+        if project_id not in ids:
+            raise HTTPException(status_code=403, detail="Permission Denied")
 
-        history_service = HistoryService(marda_db, mongodb)
+        history_service = HistoryService(maria_db, mongodb)
         results = await history_service.get_histories(project_id, user_id, page, limit)
 
         return CommonResponse[PaginationDto[List[HistoryListData]]](
@@ -47,11 +53,22 @@ async def get_history_list(
 async def get_history_detail(
     history_id: str,
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
-    marda_db: Session = Depends(get_database_mariadb),
+    maria_db: Session = Depends(get_database_mariadb),
     mongodb: Session = Depends(get_database_mongodb)
 ):
     try:
-        history_service = HistoryService(marda_db, mongodb)
+        access_token = credentials.credentials
+        jwt = JWTManage(maria_db)
+        user_id = jwt.verify_token(access_token)["user_id"]
+        
+        permission = Permissions(maria_db, mongodb)
+        pjt_id = await permission._get_history_id_to_project_id(history_id)
+        ids = await permission.get_project_permissions_viewer(user_id, pjt_id)
+        
+        if pjt_id not in ids:
+            raise HTTPException(status_code=403, detail="Permission Denied")
+        
+        history_service = HistoryService(maria_db, mongodb)
         results = await history_service.get_history_detail(history_id)
 
         return CommonResponse[HistoryData](
@@ -67,11 +84,22 @@ async def get_history_detail(
 async def delete_history(
     history_id: str,
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
-    marda_db: Session = Depends(get_database_mariadb),
+    maria_db: Session = Depends(get_database_mariadb),
     mongodb: Session = Depends(get_database_mongodb)
 ):
     try:
-        history_service = HistoryService(marda_db, mongodb)
+        access_token = credentials.credentials
+        jwt = JWTManage(maria_db)
+        user_id = jwt.verify_token(access_token)["user_id"]
+        
+        permission = Permissions(maria_db, mongodb)
+        pjt_id = await permission._get_history_id_to_project_id(history_id)
+        ids = await permission.get_project_permissions_editor(user_id, pjt_id)
+        
+        if pjt_id not in ids:
+            raise HTTPException(status_code=403, detail="Permission Denied")
+        
+        history_service = HistoryService(maria_db, mongodb)
         await history_service.delete_history(history_id)
 
         return CommonResponse[str](

@@ -214,11 +214,13 @@ class ImageService:
     
     # 1. 이미지 정보 가져오기
     async def read_image_detail(
-    self,
-    image_id: str,
-    search_conditions: List[SearchCondition] | None
-) -> ImageDetailResponse:
-
+        self,
+        user_id: int,
+        image_id: str,
+        search_conditions: List[SearchCondition] | None
+    ) -> ImageDetailResponse:
+        allowed_images = await self._get_user_permissions(user_id)
+        
         # images, metadata
         image_one = await self.collection_images.find_one({"_id": ObjectId(image_id)})
         if image_one is None:
@@ -259,8 +261,8 @@ class ImageService:
             departments=departments
         )
 
-        images_cursor = self.collection_images.find({})
-        images = [str(image["_id"]) for image in await images_cursor.to_list(length=None)]
+        object_ids = [ObjectId(id) for id in allowed_images]
+        base_query = {"_id": {"$in": object_ids}}
         
         if search_conditions:
             tag_doc = await self.collection_tag_images.find_one({})
@@ -268,50 +270,34 @@ class ImageService:
             for condition in search_conditions:
                 group_result = await self._process_condition_group(tag_doc, condition)
                 final_matching_ids.update(group_result)
+            
+            # 권한이 있는 이미지와 검색 조건을 만족하는 이미지의 교집합
+            allowed_images = list(set(allowed_images) & final_matching_ids)
+            object_ids = [ObjectId(id) for id in allowed_images]
+            base_query = {"_id": {"$in": object_ids}}
 
-            images = list(set(images) & final_matching_ids)
-
+        images = await self.collection_images.find(base_query).to_list(length=None)
+        image_ids = [str(image["_id"]) for image in images]
         
-        if not images:
+        if not image_ids:
             raise HTTPException(status_code=404, detail="No images found for this project")
 
-        total_pages = len(images)
-        start_index = 0
-
-        # image_id가 제공된 경우 start_index 설정
-        if image_id:
-            try:
-                start_index = images.index(image_id)
-            except ValueError:
-                raise HTTPException(status_code=400, detail="Invalid image_id")
-
-        next_cursor = None
-        previous_cursor = None
-
-        current_page = start_index + 1
-        
-        # next_cursor 설정
-        if len(images) > current_page:
-            next_cursor = images[current_page]
-
-        # previous_cursor 설정
-        if start_index > 0:
-            previous_cursor = images[max(0, start_index - 1)]
-
-        # result
+        total_pages = len(image_ids)
         try:
-            return {
-                "metadata": metadata_one,
-                "access_control": access_control,
-                "pagination": {
-                    "previous_cursor": previous_cursor,
-                    "next_cursor": next_cursor,
-                    "current_page": current_page,
-                    "total_pages": total_pages
-                }
+            current_page = image_ids.index(image_id) + 1
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid image_id")
+
+        next_cursor = image_ids[current_page] if len(image_ids) > current_page else None
+        previous_cursor = image_ids[max(0, current_page - 2)] if current_page > 1 else None
+
+        return {
+            "metadata": metadata_one,
+            "access_control": access_control,
+            "pagination": {
+                "previous_cursor": previous_cursor,
+                "next_cursor": next_cursor,
+                "current_page": current_page,
+                "total_pages": total_pages
             }
-        except Exception as e:
-            raise HTTPException(
-                status_code=500,
-                detail=f"이미지 정보 조회 중 오류가 발생했습니다: {str(e)}"
-            )
+        }

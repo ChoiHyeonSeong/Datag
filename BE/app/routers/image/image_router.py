@@ -6,7 +6,7 @@ from typing import List
 from dto.common_dto import CommonResponse
 from configs.mariadb import get_database_mariadb
 from configs.mongodb import get_database_mongodb
-from services.auth.auth_service import JWTManage
+from services.auth.auth_service import JWTManage, Permissions
 from services.image.image_service import ImageService
 from services.image.download_service import DownloadService
 from dto.search_dto import SearchRequest, ImageSearchResponse, SearchImageRequests
@@ -26,8 +26,20 @@ async def get_image_detail(
     mongodb : Session = Depends(get_database_mongodb)
 ):
     try:
+        print(request)
+        
+        access_token = credentials.credentials
+        jwt = JWTManage(maria_db)
+        user_id = jwt.verify_token(access_token)["user_id"]
+        
+        permission = Permissions(maria_db, mongodb)
+        ids = await permission.get_image_permissions(user_id)
+        
+        if request.image_id not in ids:
+            raise HTTPException(status_code=403, detail="Permission Denied")
+
         image_service = ImageService(maria_db, mongodb)
-        response = await image_service.read_image_detail(request.image_id, request.conditions)
+        response = await image_service.read_image_detail(user_id, request.image_id, request.conditions)
 
         return CommonResponse(
             status=200,
@@ -46,7 +58,7 @@ async def download(
     maria_db : Session = Depends(get_database_mariadb),
     mongodb : Session = Depends(get_database_mongodb)
 ):
-    try:
+    try:        
         download_service = DownloadService(maria_db, mongodb)
         return await download_service.download_image(request)
     except HTTPException as http_exc:

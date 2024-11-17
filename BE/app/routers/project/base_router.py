@@ -9,7 +9,7 @@ from dto.common_dto import CommonResponse
 from dto.pagination_dto import PaginationDto
 from dto.project_dto import ProjectRequest, ProjectResponse, AddImageRequest, AddFilteringImageRequest
 from services.project.project_service import ProjectService
-from services.auth.auth_service import JWTManage
+from services.auth.auth_service import JWTManage, Permissions
 from dto.search_dto import ImageSearchResponse, SearchRequest, SearchProjectImageRequest
 from dto.uploads_dto import UploadRequest
 from services.project.upload_service import UploadService
@@ -86,6 +86,16 @@ async def delete_project(
     mongodb : Session = Depends(get_database_mongodb)
 ):
     try:
+        access_token = credentials.credentials
+        jwt = JWTManage(maria_db)
+        user_id = jwt.verify_token(access_token)["user_id"]
+        
+        permission = Permissions(maria_db, mongodb)
+        ids = await permission.get_project_permissions_editor(user_id, project_id)
+        
+        if project_id not in ids:
+            raise HTTPException(status_code=403, detail="Permission Denied")
+        
         project_service = ProjectService(maria_db, mongodb)
         await project_service.delete_project(project_id)
         return CommonResponse(
@@ -109,6 +119,16 @@ async def search_project_images(
     mongodb : Session = Depends(get_database_mongodb)
 ):
     try:
+        access_token = credentials.credentials
+        jwt = JWTManage(maria_db)
+        user_id = jwt.verify_token(access_token)["user_id"]
+        
+        permission = Permissions(maria_db, mongodb)
+        ids = await permission.get_project_permissions_viewer(user_id, project_id)
+        
+        if project_id not in ids:
+            raise HTTPException(status_code=403, detail="Permission Denied")
+        
         conditions = conditions or SearchRequest()
 
         project_service = ProjectService(maria_db, mongodb)
@@ -146,6 +166,12 @@ async def image_upload(
 
         parsed_request = json.loads(upload_request)
         upload_request_obj = UploadRequest(**parsed_request)
+
+        permission = Permissions(maria_db, mongodb)
+        ids = await permission.get_project_permissions_editor(user_id, upload_request_obj.project_id)
+        
+        if upload_request_obj.project_id not in ids:
+            raise HTTPException(status_code=403, detail="Permission Denied")
 
         upload = UploadService(maria_db, mongodb)
         file_contents = []
@@ -195,6 +221,16 @@ async def image_add(
     mongodb : Session = Depends(get_database_mongodb)
 ):
     try:
+        access_token = credentials.credentials
+        jwt = JWTManage(maria_db)
+        user_id = jwt.verify_token(access_token)["user_id"]
+        
+        permission = Permissions(maria_db, mongodb)
+        ids = await permission.get_project_permissions_editor(user_id, request.project_id)
+        
+        if request.project_id not in ids:
+            raise HTTPException(status_code=403, detail="Permission Denied")
+        
         project_service = ProjectService(maria_db, mongodb)
         background_tasks.add_task(project_service.get_add_image, request)
         return
@@ -212,7 +248,17 @@ async def filter_image_add(
     maria_db : Session = Depends(get_database_mariadb),
     mongodb : Session = Depends(get_database_mongodb)
 ):
-    try:    
+    try:
+        access_token = credentials.credentials
+        jwt = JWTManage(maria_db)
+        user_id = jwt.verify_token(access_token)["user_id"]
+        
+        permission = Permissions(maria_db, mongodb)
+        ids = await permission.get_project_permissions_editor(user_id, project_id)
+        
+        if project_id not in ids:
+            raise HTTPException(status_code=403, detail="Permission Denied")
+        
         project_service = ProjectService(maria_db, mongodb)
 
         response = await project_service.add_filter_image(
@@ -238,6 +284,16 @@ async def get_image_detail(
     mongodb : Session = Depends(get_database_mongodb)
 ):
     try:
+        access_token = credentials.credentials
+        jwt = JWTManage(maria_db)
+        user_id = jwt.verify_token(access_token)["user_id"]
+        
+        permission = Permissions(maria_db, mongodb)
+        ids = await permission.get_project_permissions_viewer(user_id, request.project_id)
+        
+        if request.project_id not in ids:
+            raise HTTPException(status_code=403, detail="Permission Denied")
+        
         project_service = ProjectService(maria_db, mongodb)
         response = await project_service.read_image_detail(request.project_id, request.image_id, request.conditions)
 
@@ -261,6 +317,16 @@ async def get_image_detail(
     mongodb : Session = Depends(get_database_mongodb)
 ):
     try:
+        access_token = credentials.credentials
+        jwt = JWTManage(maria_db)
+        user_id = jwt.verify_token(access_token)["user_id"]
+        
+        permission = Permissions(maria_db, mongodb)
+        ids = await permission.get_project_permissions_viewer(user_id, project_id)
+        
+        if project_id not in ids:
+            raise HTTPException(status_code=403, detail="Permission Denied")
+        
         access_token = credentials.credentials
         jwt = JWTManage(maria_db)
         user_id = jwt.verify_token(access_token)["user_id"]
