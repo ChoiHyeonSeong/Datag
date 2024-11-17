@@ -439,6 +439,7 @@ class Permissions:
         self.collection_image_permissions = mongodb.get_collection("imagePermissions")
         self.collection_project_permissions = mongodb.get_collection("projectPermissions")
         self.collection_histories = mongodb.get_collection("histories")
+        self.collection_images = mongodb.get_collection("images")
         
     async def get_image_permissions(self, user_id: int):
         try:
@@ -556,9 +557,15 @@ class Permissions:
             
     async def _get_history_id_to_project_id(self, history_id: str):
         try:
-            project_id = await self.collection_images.find_one({"_id": ObjectId(history_id)}).get("projectId", "")
-            
-            return str(project_id)
+            document = await self.collection_histories.find_one({"_id": ObjectId(history_id)})
+            if document:
+                project_id = document.get("projectId", "")
+                return str(project_id)
+            else:
+                raise HTTPException(
+                status_code=500,
+                detail=f"History가 없습니다: {str(e)}"
+            )
         
         except HTTPException as http_exc:
             raise http_exc
