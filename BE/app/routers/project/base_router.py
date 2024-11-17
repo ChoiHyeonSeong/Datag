@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Form, Security, BackgroundTasks, Query, Body
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from typing import List
+from typing import List, Optional
 from sqlalchemy.orm import Session
 
 from configs.mariadb import get_database_mariadb
@@ -134,7 +134,7 @@ async def search_project_images(
 async def image_upload(
     background_tasks: BackgroundTasks,
     upload_request: str = Form(...),
-    files: list[UploadFile] | None = Form([]),
+    files: List[UploadFile] = File(...),
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
     maria_db : Session = Depends(get_database_mariadb),
     mongodb : Session = Depends(get_database_mongodb)

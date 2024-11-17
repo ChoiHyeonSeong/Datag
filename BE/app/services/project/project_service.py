@@ -555,9 +555,9 @@ class ProjectService:
             else:
                 filtered_images = list((tag_and_images & tag_or_images) - tag_not_images)
             
-            project_one = await collection_projects.find_one({"_id": ObjectId(project_id)})
+            project_one = await self.collection_projects.find_one({"_id": ObjectId(project_id)})
             project_modelName = project_one.get("modelName")
-            image_models_one = await collection_image_models.find_one({})
+            image_models_one = await self.collection_image_models.find_one({})
             image_model_one = image_models_one.get("models").get(f"{project_modelName}")
 
             final_images = list((set(image_model_one) & set(filtered_images)))
@@ -565,7 +565,7 @@ class ProjectService:
             # 필터링된 이미지를 project에 저장
             if final_images:
                 for image_id in final_images:
-                    await collection_project_images.update_one(
+                    await self.collection_project_images.update_one(
                         {},
                         {
                             "$addToSet": {
