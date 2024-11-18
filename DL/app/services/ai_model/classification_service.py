@@ -1,14 +1,8 @@
 from fastapi import HTTPException
-from typing import List
 import torch
-import torch.nn as nn
 from torchvision import models
 from PIL import Image
-from PIL.Image import Image as PILImage
 from io import BytesIO
-import logging
-import numpy as np
-import torch.nn as nn
 import time
 
 from dto.ai_model_dto import AIModelRequest, ClassificationPredictionResult
@@ -134,18 +128,8 @@ class ClassificationService:
         )
         model_path = "best_pet_ConvNeXt.pth"
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        # weight = torch.load(model_path, map_location=torch.device(device))
-        logging.debug("모델 초기화 시작")
-        try:
-            weight = torch.load(model_path, map_location=torch.device(device))
-            logging.debug("가중치 로드 성공")
-            model.load_state_dict(weight, strict=False)
-            logging.debug("모델 상태 로드 성공")
-        except Exception as e:
-            logging.error(f"Error loading model: {e}")
-            raise
-
-        # model.load_state_dict(weight, strict=False)
+        weight = torch.load(model_path, map_location=torch.device(device))
+        model.load_state_dict(weight)
         model.verbose = False
 
         def hook_fn(module, input, output):
