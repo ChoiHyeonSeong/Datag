@@ -134,7 +134,7 @@ class ClassificationService:
         model_path = "best_pet_ConvNeXt.pth"
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         weight = torch.load(model_path, map_location=torch.device(device))
-        model.load_state_dict(weight)
+        model.load_state_dict(weight, strict=False)
         model.verbose = False
 
         def hook_fn(module, input, output):

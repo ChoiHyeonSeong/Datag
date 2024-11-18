@@ -242,6 +242,7 @@ async def image_add(
 # 8. 프로젝트에 이미지 필터링 저장
 @router.post("/filterImage/{project_id}/list", description="프로젝트에 이미지 필터링 저장")
 async def filter_image_add(
+    background_tasks: BackgroundTasks,
     project_id: str,
     credentials: HTTPAuthorizationCredentials = Security(security_scheme),
     conditions: AddFilteringImageRequest = Body(default=None),
@@ -261,10 +262,12 @@ async def filter_image_add(
         
         project_service = ProjectService(maria_db, mongodb)
 
-        response = await project_service.add_filter_image(
-            project_id,
-            conditions.conditions
-        )
+        response = background_tasks.add_task(project_service.add_filter_image, project_id, conditions.conditions)
+
+        # response = await project_service.add_filter_image(
+        #     project_id,
+        #     conditions.conditions
+        # )
 
         return CommonResponse(
             status=200,

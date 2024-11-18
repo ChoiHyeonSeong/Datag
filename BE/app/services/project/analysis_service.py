@@ -1,12 +1,13 @@
 from fastapi import HTTPException
 from typing import List
-import numpy as np
 from sklearn.manifold import TSNE
 from sqlalchemy.orm import Session
-import umap
 from datetime import datetime, timezone
 from bson import ObjectId
+import numpy as np
+import umap
 
+from utils.timezone import get_current_time
 from dto.search_dto import SearchCondition
 from dto.analysis_dto import DimensionReductionRequest, AutoDimensionReductionRequest, DimensionReductionResponse
 from models.history_models import HistoryData, ReductionResults
@@ -497,8 +498,8 @@ class AnalysisService:
                 "selectedTags": selected_tags
             },
             "results": None,
-            "createdAt": datetime.now(timezone.utc),
-            "updatedAt": datetime.now(timezone.utc)
+            "createdAt": get_current_time(),
+            "updatedAt": get_current_time()
         }   
         
         return HistoryData.model_validate(history_obj)

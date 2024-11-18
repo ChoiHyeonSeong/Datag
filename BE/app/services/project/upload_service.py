@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 from typing import List, Dict
 from requests.packages.urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
+from dotenv import load_dotenv
+from bson import ObjectId
 import mimetypes
 import zipfile
 import requests
@@ -12,14 +14,14 @@ import uuid
 import io
 import os
 import json
-from bson import ObjectId
-from dotenv import load_dotenv
+
 
 from models.uploadbatch_models import UploadBatch
 from models.mariadb_users import Departments, Users
 from dto.uploads_dto import UploadRequest
 from dto.upload_batch_dto import UploadBatchListData
 from configs.s3 import upload_to_s3
+from utils.timezone import get_current_time
 
 BUCKENAME = 'ssafy-project'
 
@@ -67,8 +69,8 @@ class UploadService:
                 "userId": user_id,
                 "projectId": upload_request.project_id,
                 "isDone": False,
-                "createdAt": datetime.now(timezone.utc),
-                "updatedAt": datetime.now(timezone.utc)
+                "createdAt": get_current_time(),
+                "updatedAt": get_current_time()
             }
 
             batch_obj = UploadBatch.model_validate(batch_obj)

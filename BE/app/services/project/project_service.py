@@ -630,7 +630,9 @@ class ProjectService:
         
         # 프로젝트의 image 목록 가져오기
         images = project.get("project", {}).get(project_id, [])
-        
+        if not images:
+            images = []
+
         if search_conditions:
             tag_doc = await self.collection_tag_images.find_one({})
             final_matching_ids = set()
@@ -642,6 +644,15 @@ class ProjectService:
 
         if not images:
             raise HTTPException(status_code=404, detail="No images found for this project")
+        
+        # images를 createdAt 기준으로 정렬
+        object_ids = [ObjectId(img_id) for img_id in images]
+        sorted_images = await self.collection_images.find(
+            {"_id": {"$in": object_ids}}
+        ).sort("createdAt", 1).to_list(length=None)
+
+        # 정렬된 이미지 ID만 추출
+        images = [str(img["_id"]) for img in sorted_images]
 
         total_pages = len(images)
         start_index = 0

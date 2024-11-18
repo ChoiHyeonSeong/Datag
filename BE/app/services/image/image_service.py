@@ -276,7 +276,7 @@ class ImageService:
             object_ids = [ObjectId(id) for id in allowed_images]
             base_query = {"_id": {"$in": object_ids}}
 
-        images = await self.collection_images.find(base_query).to_list(length=None)
+        images = await self.collection_images.find(base_query).sort('createdAt', -1).to_list(length=None)
         image_ids = [str(image["_id"]) for image in images]
         
         if not image_ids:
