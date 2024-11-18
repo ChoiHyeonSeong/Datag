@@ -98,7 +98,7 @@ async def search_images(
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/model/search", response_model=CommonResponse[PaginationDto[List[ImageSearchResponse]]])
-async def search_images(
+async def search_model_images(
     background_tasks: BackgroundTasks,
     conditions: SearchRequest = Body(default=None),
     modelname: Optional[str] = Query(None, description="모델"),
