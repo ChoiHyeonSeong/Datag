@@ -27,9 +27,6 @@ if platform.system() == 'Windows':
 
 app = FastAPI(
     root_path="/be",
-    openapi_url="/openapi.json",
-    docs_url="/docs",
-    redoc_url="/redoc"
 )
 
 
