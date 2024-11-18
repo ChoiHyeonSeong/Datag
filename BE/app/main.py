@@ -24,10 +24,7 @@ if platform.system() == 'Windows':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 app = FastAPI(
-    root_path="/be",
-    openapi_url="/be/openapi.json",  
-    docs_url="/be/docs",             
-    redoc_url="/be/redoc"            
+    root_path="/be"         
 )
 
 
