@@ -1,10 +1,7 @@
 from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
 
 from routers import cls_router, det_router
-from services.mongodb.classification_metadata_service import ClassificationMetadataService
-from services.mongodb.detection_metadata_service import ObjectDetectionMetadataService
 from configs.mongodb import mongo_url
 
 
