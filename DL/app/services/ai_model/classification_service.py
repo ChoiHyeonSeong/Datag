@@ -113,7 +113,8 @@ class ClassificationService:
         model.classifier[1] = torch.nn.Linear(model.classifier[1].in_features, 37)
         model_path = "best_pet_EfficientNetV2.pth"
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        model.load_state_dict(torch.load(model_path, map_location=torch.device(device)))
+        weigth = torch.load(model_path, map_location=torch.device(device))
+        model.load_state_dict(weigth)
         model.verbose = False
 
         def hook_fn(module, input, output):
@@ -132,7 +133,8 @@ class ClassificationService:
         )
         model_path = "best_pet_ConvNeXt.pth"
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        model.load_state_dict(torch.load(model_path, map_location=torch.device(device)))
+        weight = torch.load(model_path, map_location=torch.device(device))
+        model.load_state_dict(weight)
         model.verbose = False
 
         def hook_fn(module, input, output):
@@ -148,7 +150,8 @@ class ClassificationService:
         model.fc = torch.nn.Linear(num_ftrs, 37)
         model_path = "best_pet_RegNet.pth"
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        model.load_state_dict(torch.load(model_path, map_location=torch.device(device)))
+        weight = torch.load(model_path, map_location=torch.device(device))
+        model.load_state_dict(weight)
         model.verbose = False
 
         def hook_fn(module, input, output):
