@@ -134,7 +134,10 @@ class ClassificationService:
         model_path = "best_pet_ConvNeXt.pth"
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         weight = torch.load(model_path, map_location=torch.device(device))
-        model.load_state_dict(weight, strict=False)
+        try:
+            model.load_state_dict(weight, strict=False)
+        except Exception as e:
+            print(f"Error loading model: {e}")
         model.verbose = False
 
         def hook_fn(module, input, output):
