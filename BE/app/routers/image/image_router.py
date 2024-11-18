@@ -1,7 +1,7 @@
-from fastapi import APIRouter, HTTPException, Security, Depends, Query, Body
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Security, Depends, Query, Body
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 
 from dto.common_dto import CommonResponse
 from configs.mariadb import get_database_mariadb
@@ -26,8 +26,6 @@ async def get_image_detail(
     mongodb : Session = Depends(get_database_mongodb)
 ):
     try:
-        print(request)
-        
         access_token = credentials.credentials
         jwt = JWTManage(maria_db)
         user_id = jwt.verify_token(access_token)["user_id"]
@@ -86,6 +84,41 @@ async def search_images(
         result = await image_service.search_images_by_conditions(
             conditions.conditions, 
             user_id,
+            page,
+            limit
+        )
+        
+        return CommonResponse(
+            status=200,
+            data=result
+        )
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/model/search", response_model=CommonResponse[PaginationDto[List[ImageSearchResponse]]])
+async def search_images(
+    background_tasks: BackgroundTasks,
+    conditions: SearchRequest = Body(default=None),
+    modelname: Optional[str] = Query(None, description="모델"),
+    page: int = Query(1, ge=1, description="페이지 번호"),
+    limit: int = Query(10, ge=1, le=100, description="페이지당 항목 수"),
+    credentials: HTTPAuthorizationCredentials = Security(security_scheme),
+    maria_db : Session = Depends(get_database_mariadb),
+    mongodb : Session = Depends(get_database_mongodb)
+):
+    try:
+        jwt = JWTManage(maria_db)
+        user_id = jwt.verify_token(credentials.credentials)["user_id"]
+        
+        conditions = conditions or SearchRequest()
+        
+        image_service = ImageService(maria_db, mongodb)
+        result = await image_service.search_model_images_by_conditions(
+            conditions.conditions,
+            user_id,
+            modelname,
             page,
             limit
         )
