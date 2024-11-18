@@ -180,7 +180,7 @@ class ImageService:
 
             # 페이지네이션을 위한 정렬 추가
             skip = (page - 1) * limit
-            paginated_images = await self.collection_images.find(base_query).sort('createdAt', 1).skip(skip).limit(limit).to_list(length=None)
+            paginated_images = await self.collection_images.find(base_query).sort('createdAt', -1).skip(skip).limit(limit).to_list(length=None)
 
 
             # 매칭된 이미지 정보 조회
