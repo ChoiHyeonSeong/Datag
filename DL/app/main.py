@@ -9,10 +9,7 @@ from configs.mongodb import get_database_mongodb
 import traceback
 
 app = FastAPI(
-    root_path="/dl",
-    openapi_url="/openapi.json",
-    docs_url="/docs",
-    redoc_url="/redoc"
+    root_path="/dl"
 )
 
 main_router = APIRouter(prefix="/api")
