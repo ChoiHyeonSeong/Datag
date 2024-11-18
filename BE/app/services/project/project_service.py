@@ -12,7 +12,7 @@ from dto.pagination_dto import PaginationDto
 from dto.project_dto import ProjectRequest, ProjectResponse, AddImageRequest, AddFilteringImageResponse
 from dto.image_detail_dto import UserInformation, AccessControl, ImageDetailResponse
 from models.mariadb_users import Users, Departments
-from typing import List
+from typing import List, Set
 
 # 1. 프로젝트 생성, 삭제 및 불러오기
 class ProjectService:
@@ -599,11 +599,11 @@ class ProjectService:
         
         # 1. 이미지 정보 가져오기
     async def read_image_detail(
-    self,
-    project_id: str,
-    image_id: str,
-    search_conditions: List[SearchCondition] | None
-) -> ImageDetailResponse:
+        self,
+        project_id: str,
+        image_id: str,
+        search_conditions: List[SearchCondition] | None
+    ) -> ImageDetailResponse:
 
         # images, metadata
         image_one = await self.collection_images.find_one({"_id": ObjectId(image_id)})
@@ -703,4 +703,156 @@ class ProjectService:
             raise HTTPException(
                 status_code=500,
                 detail=f"이미지 정보 조회 중 오류가 발생했습니다: {str(e)}"
+            )
+
+    # 전체 이미지 유저 접근 권한 설정
+    async def _get_user_permissions(self, user_id: int) -> Set[str]:
+        try:
+            user = self.db.query(Users).filter(Users.user_id == user_id).first()
+            if not user:
+                raise HTTPException(status_code=404, detail="사용자가 존재하지 않습니다.")
+            
+            department = self.db.query(Departments).filter(
+                Departments.department_id == user.department_id
+            ).first()
+            department_name = department.department_name if department else None
+
+            permissions = await self.collection_image_permissions.find_one({})
+            if not permissions:
+                return set()
+
+            accessible_images = set()
+
+            if 'user' in permissions and str(user_id) in permissions['user']:
+                accessible_images.update(permissions['user'].get(str(user_id), []))
+
+            if department_name and 'department' in permissions:
+                accessible_images.update(permissions['department'].get(department_name, []))
+
+            return accessible_images
+
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    async def _filter_by_permissions(self, image_ids: Set[str], user_id: int) -> Set[str]:
+        accessible_images = await self._get_user_permissions(user_id)
+        return image_ids & accessible_images
+
+    ## 3. 이미지 Tag 필터링하기 (모델 기준으로)
+    async def search_model_images_by_conditions(self, search_conditions: List[SearchCondition] | None, user_id: int, projectId: str | None = None, page: int = 1, limit: int = 10) -> PaginationDto[List[ImageSearchResponse]]:
+        try:
+            # 1. tag document 가져오기
+            tag_doc = await self.collection_tag_images.find_one({})
+            if not tag_doc:
+                return {
+                    "data": [],
+                    "page": page,
+                    "limit": limit,
+                    "total_count": 0,
+                    "total_pages": 0
+                }
+            if not search_conditions:
+                allowed_images = await self._get_user_permissions(user_id)
+                if not allowed_images:
+                    return {
+                        "data": [],
+                        "page": page,
+                        "limit": limit,
+                        "total_count": 0,
+                        "total_pages": 0
+                    }
+            else:
+                final_matching_ids = set()
+                for condition in search_conditions:
+                    group_result = await self._process_condition_group(tag_doc, condition)
+                    final_matching_ids.update(group_result)
+                
+                if not final_matching_ids:
+                    return {
+                        "data": [],
+                        "page": page,
+                        "limit": limit,
+                        "total_count": 0,
+                        "total_pages": 0
+                    }
+                    
+                allowed_images = await self._filter_by_permissions(final_matching_ids, user_id)
+                if not allowed_images:
+                    return {
+                        "data": [],
+                        "page": page,
+                        "limit": limit,
+                        "total_count": 0,
+                        "total_pages": 0
+                    }
+                
+            if projectId:
+                project = await self.collection_projects.find_one({"_id": ObjectId(projectId)})
+                if not project:
+                    return {
+                        "data": [], 
+                        "page": page,
+                        "limit": limit,
+                        "total_count": 0,
+                        "total_pages": 0
+                    }
+                    
+                    
+                print(project)
+                    
+                model_name = project.get("modelName")
+                
+                
+                print(model_name)
+                image_models = await self.collection_image_models.find_one({})
+                if not image_models:
+                    return {
+                        "data": [],
+                        "page": page,
+                        "limit": limit,
+                        "total_count": 0,
+                        "total_pages": 0
+                    }
+                model_image_ids = set(image_models.get("models", {}).get(model_name, []))
+                allowed_images &= model_image_ids
+            
+            object_ids = [ObjectId(id) for id in allowed_images]       
+            
+            # 전체 개수 조회
+            base_query = {"_id": {"$in": object_ids}}
+            total_count = await self.collection_images.count_documents(base_query)
+            total_pages = (total_count + limit - 1) // limit
+
+            # 페이지네이션을 위한 정렬 추가
+            skip = (page - 1) * limit
+            paginated_images = await self.collection_images.find(base_query).sort('createdAt', 1).skip(skip).limit(limit).to_list(length=None)
+
+
+            # 매칭된 이미지 정보 조회
+            metadata_ids = [ObjectId(image["metadataId"]) for image in paginated_images]
+            metadata_docs = await self.collection_metadata.find(
+                {"_id": {"$in": metadata_ids}},
+                {"fileList": 1}
+            ).to_list(length=None)
+
+            metadata_dict = {str(doc["_id"]): doc.get("fileList", [])[0] for doc in metadata_docs}
+
+            image_list = [
+                ImageSearchResponse(images={str(image["_id"]): metadata_dict.get(str(image["metadataId"]))})
+                for image in paginated_images
+                if metadata_dict.get(str(image["metadataId"]))
+            ]
+
+            return {
+                "data": image_list,
+                "page": page,
+                "limit": limit,
+                "total_count": total_count,
+                "total_pages": total_pages
+            }
+
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"이미지를 찾는 중 에러가 발생했습니다: {str(e)}"
             )

@@ -1,7 +1,7 @@
-from fastapi import APIRouter, HTTPException, Security, Depends, Query, Body
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Security, Depends, Query, Body
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 
 from dto.common_dto import CommonResponse
 from configs.mariadb import get_database_mariadb
@@ -26,8 +26,6 @@ async def get_image_detail(
     mongodb : Session = Depends(get_database_mongodb)
 ):
     try:
-        print(request)
-        
         access_token = credentials.credentials
         jwt = JWTManage(maria_db)
         user_id = jwt.verify_token(access_token)["user_id"]
