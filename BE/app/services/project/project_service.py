@@ -27,6 +27,7 @@ class ProjectService:
         self.collection_project_images = mongodb.get_collection("projectImages")
         self.collection_project_histories = mongodb.get_collection("projectHistories")
         self.collection_image_models = mongodb.get_collection("imageModels")
+        self.collection_image_permissions = mongodb.get_collection("imagePermissions")
     
     # 1-1. Project 생성
     async def create_project(self, creator_user_id: int, request: ProjectRequest) -> str:
@@ -543,8 +544,10 @@ class ProjectService:
                 filtered_images = list((tag_and_images) - tag_not_images)
             elif not tag_and_images and tag_or_images:
                 filtered_images = list((tag_or_images) - tag_not_images)
-            else:
+            elif tag_and_images and tag_or_images:
                 filtered_images = list((tag_and_images & tag_or_images) - tag_not_images)
+            else:
+                filtered_images = set()
             
             project_one = await self.collection_projects.find_one({"_id": ObjectId(project_id)})
             project_modelName = project_one.get("modelName")
@@ -561,6 +564,24 @@ class ProjectService:
                         {
                             "$addToSet": {
                                 f"project.{project_id}": image_id
+                            }
+                        }
+                    )
+                    await self.collection_image_permissions.update_one(
+                        {},
+                        {
+                            "$addToSet": {
+                                f"project.{project_id}": image_id
+                            }
+                        }
+                    )
+                    image_one = await self.collection_images.find_one({"_id": ObjectId(image_id)})
+                    metadata_id = image_one.get("metadataId")
+                    await self.collection_metadata.update_one(
+                        {"_id": ObjectId(metadata_id)},
+                        {
+                            "$addToSet": {
+                                f"metadata.accessControl.projects": image_id
                             }
                         }
                     )
