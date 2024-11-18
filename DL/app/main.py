@@ -10,6 +10,7 @@ from configs.mongodb import mongo_url
 
 app = FastAPI(
     root_path="/dl"
+    
 )
 
 main_router = APIRouter(prefix="/api")
