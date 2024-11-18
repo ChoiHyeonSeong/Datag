@@ -96,38 +96,3 @@ async def search_images(
         raise http_exc
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-@router.post("/model/search", response_model=CommonResponse[PaginationDto[List[ImageSearchResponse]]])
-async def search_model_images(
-    background_tasks: BackgroundTasks,
-    conditions: SearchRequest = Body(default=None),
-    modelname: Optional[str] = Query(None, description="모델"),
-    page: int = Query(1, ge=1, description="페이지 번호"),
-    limit: int = Query(10, ge=1, le=100, description="페이지당 항목 수"),
-    credentials: HTTPAuthorizationCredentials = Security(security_scheme),
-    maria_db : Session = Depends(get_database_mariadb),
-    mongodb : Session = Depends(get_database_mongodb)
-):
-    try:
-        jwt = JWTManage(maria_db)
-        user_id = jwt.verify_token(credentials.credentials)["user_id"]
-        
-        conditions = conditions or SearchRequest()
-        
-        image_service = ImageService(maria_db, mongodb)
-        result = await image_service.search_model_images_by_conditions(
-            conditions.conditions,
-            user_id,
-            modelname,
-            page,
-            limit
-        )
-        
-        return CommonResponse(
-            status=200,
-            data=result
-        )
-    except HTTPException as http_exc:
-        raise http_exc
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
