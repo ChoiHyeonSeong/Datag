@@ -17,16 +17,17 @@ from routers.project.history_router import router as history_router
 from routers.user.user_router import router as user_router
 
 import asyncio
-from fastapi import FastAPI, APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import text
-from sqlalchemy.orm import sessionmaker
 
 if platform.system() == 'Windows':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 app = FastAPI(
     root_path="/be",
+    openapi_url="/be/openapi.json",  
+    docs_url="/be/docs",             
+    redoc_url="/be/redoc"            
 )
 
 
