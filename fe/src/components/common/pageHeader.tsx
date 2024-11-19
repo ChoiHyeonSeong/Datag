@@ -16,7 +16,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
     onRightButtonClick,
     isLoading,
 }) => (
-    <div className="flex justify-between items-center px-6 pb-8 pt-4 relative">
+    <div className="flex justify-between items-center px-6 pb-8 pt-4 relative mx-2">
         <Button
             onClick={onPrevious}
             color="primary"

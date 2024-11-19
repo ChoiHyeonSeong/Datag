@@ -46,14 +46,16 @@ const ImageList = ({
                 not_condition: row.NOT,
             }));
 
-        const searchParams =
-            conditions.length > 0
-                ? `?conditions=${encodeURIComponent(
-                      JSON.stringify(conditions)
-                  )}`
-                : "";
+        const searchParams = new URLSearchParams();
+        if (conditions.length > 0) {
+            searchParams.set("conditions", JSON.stringify(conditions));
+        }
 
-        router.push(`/project/${projectId}/image/${imageId}${searchParams}`);
+        const url = `/project/${projectId}/image/${imageId}${
+            conditions.length > 0 ? `?${searchParams.toString()}` : ""
+        }`;
+
+        router.push(url);
     };
 
     return (

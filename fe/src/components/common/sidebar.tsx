@@ -16,6 +16,7 @@ import { clearUserProfile, fetchUserProfile } from "@/store/user";
 import { useUserDispatch } from "@/hooks/userProfileHook";
 import { logout } from "@/app/actions/auth";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 const ThemeSelect = dynamic(() => import("@/components/common/theme-select"), {
   ssr: false,
@@ -32,16 +33,6 @@ const dummyItemList = [
     title: "Project",
     icon: AiFillDatabase,
     link: "/project",
-  },
-  {
-    title: "Department",
-    icon: FaPeopleRoof,
-    link: "/department",
-  },
-  {
-    title: "Users",
-    icon: FaUser,
-    link: "/users",
   },
 ];
 
@@ -85,7 +76,19 @@ const Sidebar = () => {
           ${isExpanded ? "w-64 translate-x-0" : "w-64 -translate-x-64"}`}
         onMouseLeave={() => setIsExpanded(false)}
       >
-        <header className="mt-3 mb-3 w-[200px] h-[100px] bg-slate-200 dark:bg-gray-800 rounded-md flex flex-col justify-center items-center">
+        <div className="p-3 dark:bg-zinc-600 flex flex-col items-center rounded-md cursor-pointer hover:scale-[105%] active:scale-[95%]  transform transition duration-100">
+          <Image
+            className="rounded-md"
+            src="/images/logo.png"
+            alt="logo"
+            width={160}
+            height={50}
+            onClick={() => {
+              router.push("/");
+            }}
+          />
+        </div>
+        <header className="mt-3 mb-3 w-[200px] h-[150px] bg-slate-200 dark:bg-gray-800 rounded-md flex flex-col justify-center items-center">
           {isLoading ? (
             <Spinner color="primary" />
           ) : profile ? (

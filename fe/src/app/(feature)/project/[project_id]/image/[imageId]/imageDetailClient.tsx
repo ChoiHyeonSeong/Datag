@@ -13,7 +13,7 @@ import { useAuthorityManager } from "@/hooks/imageDetail/useAuthorityManager";
 import { useTagManager } from "@/hooks/imageDetail/useTagManager";
 import { AuthUser } from "@/types/auth";
 import { Detection } from "@/types/metadata";
-import { TagBySearchRequest } from "@/types/tag";
+import { FilterCondition, TagBySearchRequest } from "@/types/tag";
 
 interface ImageDetailClientProps {
     imageId: string;
@@ -35,7 +35,7 @@ interface ImageDetailClientProps {
     nextId: string | null;
     prevId: string | null;
     project_id: string;
-    conditions?: TagBySearchRequest;
+    conditions?: FilterCondition[];
 }
 
 function ImageDetailClient({
@@ -115,7 +115,7 @@ function ImageDetailClient({
     const { activePanel, setActivePanel } = usePanelState();
 
     return (
-        <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-500">
+        <div className="h-screen flex flex-col bg-white dark:bg-gray-900">
             <Header
                 fileName={imageSrc.split("/").pop() || "Unknown"}
                 currentNumber={imageIdx}
@@ -138,8 +138,8 @@ function ImageDetailClient({
                 <div className="w-[20%]">
                     <div className="flex flex-col h-full">
                         <div className="h-1/3 border-b border-gray-700 dark:border-gray-50">
-                            <div className="flex px-2 py-2 pb-2 bg-gray-50 dark:bg-gray-500">
-                                <div className="flex px-2 py-2 pb-2 bg-gray-50 dark:bg-gray-500">
+                            <div className="flex px-2 py-2 pb-2 bg-white dark:bg-gray-900">
+                                <div className="flex px-2 py-2 pb-2 bg-white dark:bg-gray-900">
                                     <div
                                         className={`cursor-pointer px-4 py-1 ${
                                             activePanel === "class"

@@ -106,8 +106,14 @@ export function MainAnalysis({ selectedHistory }: MainAnalysisProps) {
               new Date(response.data.createdAt).getTime()
           )
         : 0;
+
+    const uniqueImageIds = response.data.results?.filter(
+        (item, index, self) => 
+            index === self.findIndex(t => t.imageId === item.imageId)
+    );
+
     setInitialValues({
-      totalImages: response.data.results?.length || 0,
+      totalImages: uniqueImageIds?.length || 0,
       duration: duration,
     });
   };

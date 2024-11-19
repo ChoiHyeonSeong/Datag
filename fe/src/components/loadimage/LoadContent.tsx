@@ -60,6 +60,12 @@ export function LoadContent(props: LoadContentProps) {
                                     <div className="flex items-center justify-center h-full">
                                         <div>Loading images...</div>
                                     </div>
+                                ) : imageArray.length === 0 ? (
+                                    <div className="flex items-center justify-center h-full">
+                                        <div className="text-gray-500 text-lg">
+                                            이미지가 없습니다.
+                                        </div>
+                                    </div>
                                 ) : (
                                     <LoadImageGrid images={imageArray} />
                                 )}

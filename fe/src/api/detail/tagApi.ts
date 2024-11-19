@@ -29,15 +29,17 @@ export const tagApi = {
     searchByTag: async (
         filterConditions: TagBySearchRequest,
         page: number = 1,
-        limit: number = 40
+        limit: number = 40,
+        projectId: string
     ): Promise<LoadImageByFilterResponse> => {
         const searchParams = new URLSearchParams({
             page: page.toString(),
             limit: limit.toString(),
+            projectId: projectId,
         });
 
         const response = await apiClient<LoadImageByFilterResponse>(
-            `/image/search?${searchParams.toString()}`,
+            `/project/image/model/search?${searchParams.toString()}`,
             {
                 method: "POST",
                 body: JSON.stringify(filterConditions),

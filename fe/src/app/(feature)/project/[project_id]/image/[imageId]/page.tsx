@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { ImageDetailContent } from "./ImageDetailContent";
-import { TagBySearchRequest } from "@/types/tag";
+import { FilterCondition } from "@/types/tag";
 
 export default async function ImageDetailPage({
     params,
@@ -9,7 +9,7 @@ export default async function ImageDetailPage({
     params: { project_id: string; imageId: string };
     searchParams: { conditions?: string };
 }) {
-    const conditions: TagBySearchRequest | undefined = searchParams.conditions
+    const conditions: FilterCondition[] | undefined = searchParams.conditions
         ? JSON.parse(decodeURIComponent(searchParams.conditions))
         : undefined;
 

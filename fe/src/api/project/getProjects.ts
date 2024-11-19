@@ -4,7 +4,7 @@ import { customFetch } from "@/app/actions/customFetch";
 
 export const getProjects = async (
   searchParams?: ProjectRequest
-): Promise<DefaultPaginationType<ProjectType[]>> => {
+): Promise<DefaultPaginationType<ProjectType[] | null>> => {
   // Remove the unused variable declaration and assignment
   const queryStrings = new URLSearchParams();
   if (searchParams?.model_name) {

@@ -74,7 +74,7 @@ function ImagePanel({ imageSrc, detections }: ImagePanelProps) {
     }, [imageSrc, detections, getClassColor]);
 
     return (
-        <div className="h-full w-full flex items-center justify-center p-4 bg-gray-100 dark:bg-gray-600">
+        <div className="h-full w-full flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-800">
             <canvas
                 ref={canvasRef}
                 style={{

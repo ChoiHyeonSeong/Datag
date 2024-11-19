@@ -64,6 +64,8 @@ const AutoAnalysisModal = ({ onClose, projectId }: AnalysisModalProps) => {
             };
 
             await postAutoAnalysis(bodyData);
+
+            onClose();
         } catch (error) {
             console.log(error);
         } finally {
@@ -103,7 +105,7 @@ const AutoAnalysisModal = ({ onClose, projectId }: AnalysisModalProps) => {
                     <div className="space-y-6">
                         {/* Analysis Name Section */}
                         <div className="space-y-2 w-full">
-                            <label className="text-sm font-semibold">
+                            <label className="text-sm font-semibold text-[#1a1a1a] dark:text-[#e6e6e6]">
                                 분석명
                             </label>
                             <Input
@@ -129,15 +131,15 @@ const AutoAnalysisModal = ({ onClose, projectId }: AnalysisModalProps) => {
                                 onValueChange={setAlgorithm}
                                 classNames={{
                                     base: "gap-2 w-full",
-                                    label: "text-sm font-semibold mb-2",
+                                    label: "text-sm font-semibold mb-2 text-[#1a1a1a] dark:text-[#e6e6e6]",
                                 }}
                             >
                                 <Radio
                                     value="tsne"
                                     classNames={{
                                         base: "p-1 border-2 rounded-lg data-[selected=true]:border-primary me-[0.5rem] ms-[0.2rem] min-w-[100px]",
-                                        // wrapper: "before:bg-primary",
-                                        label: "text-sm font-medium",
+                                        wrapper: "before:bg-primary",
+                                        label: "text-sm font-medium text-[#1a1a1a] dark:text-[#e6e6e6]",
                                     }}
                                 >
                                     T-SNE
@@ -146,8 +148,8 @@ const AutoAnalysisModal = ({ onClose, projectId }: AnalysisModalProps) => {
                                     value="umap"
                                     classNames={{
                                         base: "p-1 border-2 rounded-lg data-[selected=true]:border-primary min-w-[100px]",
-                                        // wrapper: "before:bg-primary",
-                                        label: "text-sm font-medium",
+                                        wrapper: "before:bg-primary",
+                                        label: "text-sm font-medium text-[#1a1a1a] dark:text-[#e6e6e6]",
                                     }}
                                 >
                                     UMAP
@@ -164,15 +166,15 @@ const AutoAnalysisModal = ({ onClose, projectId }: AnalysisModalProps) => {
                                 onValueChange={setIsPrivate}
                                 classNames={{
                                     base: "gap-2 w-full",
-                                    label: "text-sm font-semibold mb-2",
+                                    label: "text-sm font-semibold mb-2 text-[#1a1a1a] dark:text-[#e6e6e6]",
                                 }}
                             >
                                 <Radio
                                     value="open"
                                     classNames={{
                                         base: "p-1 border-2 rounded-lg data-[selected=true]:border-primary me-[0.5rem] ms-[0.2rem] min-w-[100px]",
-                                        // wrapper: "before:bg-primary",
-                                        label: "text-sm font-medium",
+                                        wrapper: "before:bg-primary",
+                                        label: "text-sm font-medium text-[#1a1a1a] dark:text-[#e6e6e6]",
                                     }}
                                 >
                                     공개
@@ -181,8 +183,8 @@ const AutoAnalysisModal = ({ onClose, projectId }: AnalysisModalProps) => {
                                     value="private"
                                     classNames={{
                                         base: "p-1 border-2 rounded-lg data-[selected=true]:border-primary min-w-[100px]",
-                                        // wrapper: "before:bg-primary",
-                                        label: "text-sm font-medium",
+                                        wrapper: "before:bg-primary",
+                                        label: "text-sm font-medium text-[#1a1a1a] dark:text-[#e6e6e6]",
                                     }}
                                 >
                                     비공개
@@ -191,7 +193,7 @@ const AutoAnalysisModal = ({ onClose, projectId }: AnalysisModalProps) => {
                         </div>
 
                         <div className="w-full">
-                            <label className="text-sm font-semibold">
+                            <label className="text-sm font-semibold text-[#1a1a1a] dark:text-[#e6e6e6]">
                                 필터 조건 설정
                             </label>
                             <FilterContainer

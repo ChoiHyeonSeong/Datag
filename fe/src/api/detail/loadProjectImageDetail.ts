@@ -10,8 +10,8 @@ export const loadProjectImageDetail = async (
     const requestForm = {
         project_id: project_id,
         image_id: imageId,
-        conditions: [...filterConditions.conditions]
-    }
+        conditions: filterConditions.conditions,
+    };
 
     const response = await apiClient<ImageDetailResponse>(
         `/project/image/detail`,

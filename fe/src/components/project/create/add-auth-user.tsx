@@ -15,7 +15,7 @@ import {
   TableRow,
   Input,
 } from "@nextui-org/react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { SearchUserType } from "@/types/projectType";
 import { useDispatch, useSelector } from "react-redux";
 import { CreateProjectAppDispatch, CreateProjectState } from "@/store/store";
@@ -34,12 +34,16 @@ const AddAuthUser = ({ isOpen, onClose }: AddAuthUserProps) => {
   const [pageUsers, setPageUsers] = useState<SearchUserType[]>([]); // 현재 페이지의 유저 목록
   const [searchText, setSearchText] = useState(""); // 검색어
   const [errorMessage, setErrorMessage] = useState(""); // 에러 메시지
-  const [willselectedUser, setWillSelectedUser] = useState<SearchUserType[]>(
-    []
-  ); // 추가할 선택된 유저 목록
+  const [willselectedUser, setWillSelectedUser] = useState<
+    Record<number, SearchUserType>
+  >({}); // 추가할 선택된 유저 목록
   const selectedUsers = useSelector(
     (state: CreateProjectState) => state.project.accesscontrol.users
   ); // 선택된 유저 목록
+
+  const willSelectedUserNumber = useMemo(() => {
+    return Object.keys(willselectedUser).length;
+  }, [willselectedUser]); // 추가할 선택된 유저 수
 
   const dispatch = useDispatch<CreateProjectAppDispatch>(); // redux dispatch
 
@@ -59,17 +63,20 @@ const AddAuthUser = ({ isOpen, onClose }: AddAuthUserProps) => {
   );
 
   const handleSelectUser = (user: SearchUserType) => {
-    // 유저를 선택하는 함수
-    if (willselectedUser.includes(user)) {
-      setWillSelectedUser(willselectedUser.filter((u) => u !== user));
+    if (willselectedUser[user.user_id]) {
+      const newSelected = { ...willselectedUser };
+      delete newSelected[user.user_id];
+      setWillSelectedUser(newSelected);
     } else {
-      setWillSelectedUser([...willselectedUser, user]);
+      setWillSelectedUser({
+        ...willselectedUser,
+        [user.user_id]: user,
+      });
     }
   };
 
   const handleAddUser = () => {
-    // 선택된 유저를 추가하는 함수
-    willselectedUser.forEach((user) => {
+    Object.values(willselectedUser).forEach((user) => {
       dispatch(
         addUser({
           user_id: user.user_id,
@@ -79,7 +86,6 @@ const AddAuthUser = ({ isOpen, onClose }: AddAuthUserProps) => {
         })
       );
     });
-
     onClose();
   };
 
@@ -88,7 +94,7 @@ const AddAuthUser = ({ isOpen, onClose }: AddAuthUserProps) => {
     if (isOpen) {
       // 모달이 열리면 초기화
       setNowPage(1);
-      setWillSelectedUser([]);
+      setWillSelectedUser({}); // 빈 객체로 초기화
       setErrorMessage("");
       setTotalPage(1);
       setPageUsers([]);
@@ -118,7 +124,7 @@ const AddAuthUser = ({ isOpen, onClose }: AddAuthUserProps) => {
       <ModalContent className="w-full">
         <ModalHeader className="flex flex-col">
           <h2 className="text-xl font-bold">추가할 인원을 넣어주세요</h2>
-          <p> {willselectedUser.length}명 이 선택됨</p>
+          <p> {willSelectedUserNumber}명 이 선택됨</p>
         </ModalHeader>
         <ModalBody className="w-full flex flex-col items-center">
           <div className="flex flex-row justify-between gap-2">
@@ -185,14 +191,12 @@ const AddAuthUser = ({ isOpen, onClose }: AddAuthUserProps) => {
                       size="sm"
                       disabled={!!selectedUsers.hasOwnProperty(user.user_id)}
                       color={
-                        willselectedUser.includes(user)
-                          ? "secondary"
-                          : "primary"
+                        willselectedUser[user.user_id] ? "secondary" : "primary"
                       }
                     >
                       {!!selectedUsers.hasOwnProperty(user.user_id)
                         ? "추가됨"
-                        : willselectedUser.includes(user)
+                        : willselectedUser[user.user_id]
                         ? "목록 제거"
                         : "목록 추가"}
                     </Button>
@@ -219,7 +223,7 @@ const AddAuthUser = ({ isOpen, onClose }: AddAuthUserProps) => {
               handleAddUser();
             }}
             disabled={
-              willselectedUser.length === 0 || errorMessage !== "" || isLoading
+              willSelectedUserNumber === 0 || errorMessage !== "" || isLoading
             }
             color="primary"
           >

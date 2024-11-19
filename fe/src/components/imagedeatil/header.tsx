@@ -24,7 +24,7 @@ function Header({
     const isLastPage = currentNumber === totalCount;
 
     return (
-        <div className="w-full flex items-center relative pt-1 pb-2 bg-gray-50 dark:bg-gray-500">
+        <div className="w-full flex items-center relative pt-1 pb-2 bg-white dark:bg-gray-900">
             <div className="flex flex-col px-2">
                 <p className="pb-1">
                     <Link

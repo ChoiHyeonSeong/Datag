@@ -3,7 +3,7 @@ import { tagApi } from "@/api/detail/tagApi";
 import { ImageArray } from "@/types/imageLoad";
 import { TagBySearchRequest } from "@/types/tag";
 
-export const useLoadContentState = () => {
+export const useLoadContentState = (projectId: string) => {
     const [page, setPage] = useState(1);
     const [images, setImages] = useState<ImageArray>({});
     const [tags, setTags] = useState<string[]>([]);
@@ -39,7 +39,9 @@ export const useLoadContentState = () => {
                 setIsLoading(true);
                 const response = await tagApi.searchByTag(
                     filterConditions,
-                    page
+                    page,
+                    40,
+                    projectId
                 );
 
                 if (response?.data) {

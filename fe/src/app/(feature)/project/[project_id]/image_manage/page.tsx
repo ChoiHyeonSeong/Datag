@@ -15,86 +15,88 @@ import { FilterSection } from "@/components/loadimage/FilterSection";
 import { useParams } from "next/navigation";
 
 export default function ImageManage() {
-  const params = useParams();
-  const ProjectId = params.project_id as string;
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedTab, setSelectedTab] = useState("upload");
-  const { images, addImages, deleteImage, deleteAllImages } = useImageState();
-  const { goBack, goToLoadImages } = useNavigation(ProjectId);
-  const { handleFileValidation } = useFileValidation({
-    images,
-    onValidFiles: addImages,
-  });
+    const params = useParams();
+    const ProjectId = params.project_id as string;
+    const [isLoading, setIsLoading] = useState(false);
+    const [selectedTab, setSelectedTab] = useState("upload");
+    const { images, addImages, deleteImage, deleteAllImages } = useImageState();
+    const { goBack, goToLoadImages } = useNavigation(ProjectId);
+    const { handleFileValidation } = useFileValidation({
+        images,
+        onValidFiles: addImages,
+    });
 
-  const loadContentState = useLoadContentState();
-  const { tags, currentFilter, searchByFilter, setPage } = loadContentState;
+    const loadContentState = useLoadContentState(ProjectId);
+    const { tags, currentFilter, searchByFilter, setPage } = loadContentState;
 
-  const handleMoveToDataset = async () => {
-    setIsLoading(true);
-    try {
-      await goToLoadImages(images, currentFilter);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    const handleMoveToDataset = async () => {
+        setIsLoading(true);
+        try {
+            await goToLoadImages(images, currentFilter);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-  const handleFilterApply = (filterData: TagBySearchRequest) => {
-    setPage(1);
-    searchByFilter(filterData, 1);
-  };
+    const handleFilterApply = (filterData: TagBySearchRequest) => {
+        setPage(1);
+        searchByFilter(filterData, 1);
+    };
 
-  return (
-    <PageContainer>
-      <PageHeader
-        title="Image Management"
-        rightButtonText="Upload&Load"
-        onRightButtonClick={handleMoveToDataset}
-        onPrevious={goBack}
-        isLoading={isLoading}
-      />
-
-      <div className="w-full">
-        <div className="mx-8 flex justify-between items-center">
-          <Tabs
-            aria-label="For Image Management"
-            variant="bordered"
-            size="lg"
-            radius="sm"
-            selectedKey={selectedTab}
-            color="primary"
-            onSelectionChange={(key) => setSelectedTab(key.toString())}
-            classNames={{
-              tabList: "border-primary",
-              cursor: "bg-primary",
-              tab: "border-primary data-[hover=true]:border-primary",
-              tabContent: "group-data-[selected=true]:text-white",
-            }}
-          >
-            <Tab key="upload" title="Upload" />
-            <Tab key="load" title="Load" />
-          </Tabs>
-          {selectedTab === "load" && (
-            <FilterSection
-              tags={tags}
-              currentFilter={currentFilter}
-              onFilterApply={handleFilterApply}
+    return (
+        <PageContainer>
+            <PageHeader
+                title="Image Management"
+                rightButtonText="Upload&Load"
+                onRightButtonClick={handleMoveToDataset}
+                onPrevious={goBack}
+                isLoading={isLoading}
             />
-          )}
-        </div>
 
-        <div className="mt-4">
-          {selectedTab === "upload" ? (
-            <UploadContent
-              images={images}
-              onFileUpload={handleFileValidation}
-              onDeleteImage={deleteImage}
-              onDeleteAllImages={deleteAllImages}
-            />
-          ) : (
-            <LoadContent {...loadContentState} />
-          )}
-        </div>
-      </div>
-    </PageContainer>
-  );
+            <div className="w-full">
+                <div className="mx-8 flex justify-between items-center">
+                    <Tabs
+                        aria-label="For Image Management"
+                        variant="bordered"
+                        size="lg"
+                        radius="sm"
+                        selectedKey={selectedTab}
+                        color="primary"
+                        onSelectionChange={(key) =>
+                            setSelectedTab(key.toString())
+                        }
+                        classNames={{
+                            tabList: "border-primary",
+                            cursor: "bg-primary",
+                            tab: "border-primary data-[hover=true]:border-primary",
+                            tabContent: "group-data-[selected=true]:text-white",
+                        }}
+                    >
+                        <Tab key="upload" title="Upload" />
+                        <Tab key="load" title="Load" />
+                    </Tabs>
+                    {selectedTab === "load" && (
+                        <FilterSection
+                            tags={tags}
+                            currentFilter={currentFilter}
+                            onFilterApply={handleFilterApply}
+                        />
+                    )}
+                </div>
+
+                <div className="mt-4">
+                    {selectedTab === "upload" ? (
+                        <UploadContent
+                            images={images}
+                            onFileUpload={handleFileValidation}
+                            onDeleteImage={deleteImage}
+                            onDeleteAllImages={deleteAllImages}
+                        />
+                    ) : (
+                        <LoadContent {...loadContentState} />
+                    )}
+                </div>
+            </div>
+        </PageContainer>
+    );
 }
