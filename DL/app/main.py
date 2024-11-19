@@ -6,14 +6,20 @@ from configs.mongodb import mongo_url
 
 
 app = FastAPI(
-    root_path="/dl"
+    title="Data API",
+    description="Data Service API",
+    version="1.0.0",
+    root_path="/dl",
+    openapi_url="/openapi.json",
+    docs_url="/docs",
+    redoc_url="/redoc"
 )
 
 main_router = APIRouter(prefix="/api")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins = [mongo_url, "http://localhost:8000"],
+    allow_origins = [mongo_url, "http://localhost:8000", "*"],
     allow_credentials = True,
     allow_methods = ["*"],
     allow_headers = ["*"]
