@@ -1,0 +1,26 @@
+{
+  "type": "Compass Connections",
+  "version": {
+    "$numberInt": "1"
+  },
+  "connections": [
+    {
+      "id": "8ace4ffb-fd83-46cf-a9a6-d177d7ad3d7f",
+      "lastUsed": {
+        "$date": {
+          "$numberLong": "1731983260985"
+        }
+      },
+      "favorite": {
+        "name": "ssafy.ngivl.mongodb..net"
+      },
+      "savedConnectionType": "recent",
+      "connectionOptions": {
+        "connectionString": "mongodb+srv://S11P31S108:ssafy108@ssafy.ngivl.mongodb.net/S11P31S108?authSource=admin",
+        "oidc": {
+          "serializedState": "eyJvaWRjUGx1Z2luU3RhdGVWZXJzaW9uIjowLCJzdGF0ZSI6W119"
+        }
+      }
+    }
+  ]
+}
