@@ -17,6 +17,7 @@ from routers.project.history_router import router as history_router
 from routers.user.user_router import router as user_router
 
 import asyncio
+import logging
 from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -35,6 +36,16 @@ app = FastAPI(
 
 main_router = APIRouter(prefix="/api")
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler("app.log"),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins = [mongo_url, "*"],
@@ -42,6 +53,15 @@ app.add_middleware(
     allow_methods = ["*"],
     allow_headers = ["*"]
 )
+
+@app.middleware("http")
+async def db_session_middleware(request, call_next):
+    try:
+        response = await call_next(request)
+        return response
+    except Exception as e:
+        logger.error(f"MariaDB error: {str(e)}")
+        raise
 
 main_router.include_router(auth_router)
 main_router.include_router(department_router)
