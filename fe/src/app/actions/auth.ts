@@ -9,6 +9,8 @@ import {
 } from "@/lib/constants/token-duration";
 import { DefaultResponseType } from "@/types/default";
 import { customFetch } from "./customFetch";
+import { redirect } from "next/dist/server/api-utils";
+import { url } from "inspector";
 
 export const check_auth = async (formData: FormData) => {
   console.log("check_auth");
@@ -117,10 +119,9 @@ export const verifyAccessToken = async (accessToken: string) => {
 // 새로운 accessToken을 반환하며, refreshToken이 유효하지 않은 경우 null을 반환
 // refreshToken이 유효하지 않은 경우, 쿠키에서 refreshToken과 accessToken을 삭제
 // 새로운 accessToken을 발급받은 경우, 쿠키에 새로운 accessToken과 refreshToken을 저장
-export const refreshAccessToken = async (): Promise<string | null> => {
-  const cookieStore = cookies();
-  const refreshToken = cookieStore.get("refreshToken");
-  if (!refreshToken) return null;
+export const refreshAccessToken = async (
+  refreshAccessToken: string
+): Promise<string | null> => {
   try {
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/refresh`,
@@ -128,46 +129,50 @@ export const refreshAccessToken = async (): Promise<string | null> => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${refreshToken.value}`,
+          Authorization: `Bearer ${refreshAccessToken}`,
         },
       }
     );
 
-    if (!response.ok) {
-      cookieStore.delete("refreshToken");
-      cookieStore.delete("accessToken");
-      return null;
+    const data: DefaultResponseType<RefreshResponseType> =
+      await response.json();
+    console.log("Refresh 결과", data.data);
+
+    if (!data?.data) {
+      throw new Error("Failed to refresh token");
     }
 
-    const data: RefreshResponseType = await response.json();
-
-    cookieStore.set({
-      name: "accessToken",
-      value: data.access_token,
-      httpOnly: true,
-      maxAge: accessTokenDuration,
-    });
-    cookieStore.set({
+    cookies().set({
       name: "refreshToken",
-      value: data.refresh_token,
+      value: data.data.refresh_token,
       httpOnly: true,
       maxAge: refreshTokenDuration,
     });
-    return data.access_token;
+
+    cookies().set({
+      name: "accessToken",
+      value: data.data.access_token,
+      httpOnly: true,
+      maxAge: accessTokenDuration,
+    });
+
+    return data.data.access_token;
   } catch (error) {
     console.error("Token refresh failed:", error);
-    cookieStore.delete("refreshToken");
-    cookieStore.delete("accessToken");
     return null;
   }
 };
 
 export const logout = async () => {
   try {
+    cookies().delete("refreshToken");
+    const accessToken = cookies().get("accessToken");
+
     await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/logout`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken?.value}`,
       },
       cache: "no-store",
     });
@@ -177,23 +182,6 @@ export const logout = async () => {
     cookies().delete("refreshToken");
     cookies().delete("accessToken");
     return null;
-  }
-};
-
-export const getAccessToken = async () => {
-  const cookieStore = cookies();
-  const accessToken = cookieStore.get("accessToken");
-  const refreshToken = cookieStore.get("refreshToken");
-
-  if (accessToken) {
-    return accessToken.value;
-  } else {
-    if (refreshToken) {
-      const result = await refreshAccessToken();
-      return result;
-    } else {
-      return null;
-    }
   }
 };
 
@@ -223,5 +211,22 @@ export const getUserProfile = async () => {
       status: 500,
       error: "Failed to fetch profile",
     };
+  }
+};
+
+export const getAccessToken = async () => {
+  const cookieStore = cookies();
+  const accessToken = cookieStore.get("accessToken");
+  const refreshToken = cookieStore.get("refreshToken");
+
+  if (accessToken) {
+    return accessToken.value;
+  } else {
+    if (refreshToken) {
+      const result = await refreshAccessToken(refreshToken.value);
+      return result;
+    } else {
+      return null;
+    }
   }
 };

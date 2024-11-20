@@ -54,13 +54,13 @@ export default function Step3({ handleMove }: StepProps) {
         <div className="w-full flex flex-row justify-evenly flex-wrap">
           <Button
             color="primary"
-            disabled={!isPrivate}
+            disabled={isPrivate}
             onClick={() => setIsOpenDepModal(true)}
           >
             부서 추가
           </Button>
           <Button
-            disabled={!isPrivate}
+            disabled={isPrivate}
             color="primary"
             onClick={() => setIsOpenUserModal(true)}
           >
@@ -72,17 +72,20 @@ export default function Step3({ handleMove }: StepProps) {
             classNames={{
               label: "text-black dark:text-white",
             }}
-            isSelected={!isPrivate}
+            isSelected={isPrivate}
             onValueChange={(isSelected) => {
-              dispatch(setIsPrivate(!isSelected));
+              dispatch(setIsPrivate(isSelected));
             }}
           >
-            Public으로 생성하기
+            Private으로 생성하기
           </Checkbox>
-          <p>public으로 설정하면, 설정값과 관계없이 무조건 전부 공개됩니다.</p>
+          <p>
+            Private으로 설정하면, 설정값과 관계없이 무조건 자기 자신만 볼수
+            있습니다.
+          </p>
         </div>
       </header>
-      {isPrivate && (
+      {!isPrivate && (
         <div className="w-full flex flex-col items-center">
           <div className="w-full flex flex-row gap-8">
             <section className="w-1/2 flex flex-col">
