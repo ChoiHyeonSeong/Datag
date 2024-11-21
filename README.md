@@ -1,5 +1,5 @@
-# 🌟 삼성 청년 SW 아카데미 11기 S108 🌟
-
+# 🌟 삼성 청년 SW 아카데미 11기 S108(DATAG) 🌟
+![img-tag](./readme-img/logo.png)
 # 🌳 프로젝트 개요
 지속 가능한 Vision AI 모델 운영을 위해서는 끊임없이 새로운 데이터가 수집되고 정제되어 모델 재학습으로 이어져야 한다.
     과거에는 데이터가 부족한 점이 문제였다면 이제는 많은 데이터 중에서 분석을 통해 보다 의미있는 데이터를 선별하여 효과적인 학습을 진행하는 것이 중요해졌다.
@@ -7,7 +7,7 @@
 
 
 # 목표
-  - 데이터 업로드 → **Metadata 생성(AI 모델 추론 결과 필요) → **이미지의 Feature Vector 추출 (Feature Extractor AI 모델 필요)
+  - 데이터 업로드 → **Metadata 생성(AI 모델 추론 결과 필요)** →이미지의 Feature Vector 추출 (Feature Extractor AI 모델 필요)
     → Feature 차원 축소(t-SNE, UMAP) → 시각화 (2D or 3D)
   - Metadata, Multiple Tag 활용을 통한 데이터 검색 기능 개발
     . Metadata는 일반적인 데이터 검색 (Date, AI Model Prediction 등의 검색 조건)
