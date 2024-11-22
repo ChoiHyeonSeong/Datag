@@ -58,14 +58,26 @@
 - Redis : 6379
 - Jenkins : 8080
 
-# 프로젝트에서 사용하는 외부 서비스 정보를 정리한 문서
-
-| 소셜 인증, 포톤 클라우드, 코드 컴파일 등에 활용 된 '외부 서비스'가입 및 활용에 필요한 정보
 
 # DB 덤프 파일 최신본
-
+## MariaDB
 [MariaDB](./S108.sql)
-[MongoDB](./compass-connections.json)
+## MongoDB
+- [project](./S11P31S108.projects.json)
+- [feature](./S11P31S108.features.json)
+- [metadata](./S11P31S108.metadata.json)
+- [images](./S11P31S108.images.json)
+- [history](./S11P31S108.histories.json)
+- [imagelabel](./S11P31S108.imageLabels.json)
+- [image_models](./S11P31S108.imageModels.json)
+- [image_permissions](./S11P31S108.imagePermissions.json)
+- [project_history](./S11P31S108.projectHistories.json)
+- [project_image](./S11P31S108.projectImages.json)
+- [project_permission](./S11P31S108.projectPermissions.json)
+- [tag_image](./S11P31S108.tagImages.json)
+- [upload_batches](./S11P31S108.uploadBatches.json)
+- [user_upload_batches](./S11P31S108.userUploadBatches.json)
+
 
 # Back End build(API) 방법
 
