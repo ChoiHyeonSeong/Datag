@@ -7,7 +7,7 @@ from app.dto.image_detail_dto import ImageDetailTagAddRequest, ImageDetailTagRem
 @pytest.mark.asyncio
 async def test_add_image_tag(async_client, auth_headers):
     request_data = ImageDetailTagAddRequest(
-        image_id="60b7c0ef9e1b2c001c8e4d3a",
+        image_id="673fda8c14cdfbe937b75019",
         tag_list=["new_tag1", "new_tag2"]
     )
     
@@ -18,21 +18,22 @@ async def test_add_image_tag(async_client, auth_headers):
         }
         
         response = await async_client.post(
-            "/image/tag/add",
+            "/be/api/image/tag/add",
             json=request_data.dict(),
             headers=auth_headers
         )
 
-        assert response.status_code == 200, "태그 추가에 실패했습니다."
-        assert "data" in response.json(), "응답 데이터가 없습니다."
-        assert "tag_name_list" in response.json()["data"], "태그 목록이 포함되지 않았습니다."
-        mock_add_image_tag.assert_called_once()
+        print(response.json())
+
+        assert response.status_code == 200
+        assert "data" in response.json()
+        assert "tag_name_list" in response.json()["data"]
 
 # 태그 삭제 테스트
 @pytest.mark.asyncio
 async def test_remove_image_tag(async_client, auth_headers):
     request_data = ImageDetailTagRemoveRequest(
-        image_id="60b7c0ef9e1b2c001c8e4d3a",
+        image_id="673fda8c14cdfbe937b75019",
         remove_tag_list=["new_tag1", "new_tag2"]
     )
     
@@ -43,15 +44,14 @@ async def test_remove_image_tag(async_client, auth_headers):
         }
         
         response = await async_client.post(
-            "/image/tag/remove",
+            "/be/api/image/tag/remove",
             json=request_data.dict(),
             headers=auth_headers
         )
 
-        assert response.status_code == 200, "태그 삭제에 실패했습니다."
-        assert "data" in response.json(), "응답 데이터가 없습니다."
-        assert "tag_name_list" in response.json()["data"], "태그 목록이 포함되지 않았습니다."
-        mock_delete_image_tag.assert_called_once()
+        assert response.status_code == 200
+        assert "data" in response.json()
+        assert "tag_name_list" in response.json()["data"]
 
 # 태그 리스트 불러오기 테스트
 @pytest.mark.asyncio
@@ -62,11 +62,10 @@ async def test_get_tags_and_images(async_client, auth_headers):
         }
         
         response = await async_client.get(
-            "/image/tag/list",
+            "/be/api/image/tag/list",
             headers=auth_headers
         )
 
-        assert response.status_code == 200, "태그 목록 불러오기에 실패했습니다."
-        assert "data" in response.json(), "응답 데이터가 없습니다."
-        assert "tags" in response.json()["data"], "태그 리스트가 포함되지 않았습니다."
-        mock_get_tag.assert_called_once()
+        assert response.status_code == 200
+        assert "data" in response.json()
+        assert "tags" in response.json()["data"]

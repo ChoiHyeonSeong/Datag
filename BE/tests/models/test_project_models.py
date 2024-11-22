@@ -15,8 +15,8 @@ async def test_create_project_service(test_maria_db, test_mongo_db):
     # 테스트 데이터 준비
     request_data = ProjectRequest(
         project_name="Test Project",
-        project_model_task="classification",
-        project_model_name="resnet",
+        project_model_task="cls",
+        project_model_name="efficientnet_v2_s",
         description="This is a test project description.",
         accesscontrol={
             "view_users": ["user1", "user2"],
@@ -48,8 +48,8 @@ async def test_delete_project_service(test_maria_db, test_mongo_db):
     # 프로젝트 생성 후 삭제 테스트
     request_data = ProjectRequest(
         project_name="Delete Test Project",
-        project_model_task="classification",
-        project_model_name="resnet",
+        project_model_task="cls",
+        project_model_name="efficientnet_v2_s",
         description="This is a test project description.",
         accesscontrol={
             "view_users": ["user1"],

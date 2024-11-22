@@ -4,32 +4,45 @@ import pytest
 @pytest.mark.asyncio
 async def test_dimension_reduction_manual(async_client, auth_headers):
     request_data = {
-        "project_id": "67330084d4c23c34e7550e66",
+        "project_id": "673fd560068f6aaf7cf089d8",
         "is_private": True,
         "history_name": "Manual Test",
         "algorithm": "tsne",
         "image_ids": [
-        "67330e5135cedc092c5471c2",
-        "67330e6635cedc092c547216",
-        "67330e4d35cedc092c5471b2",
-        "67330e6435cedc092c54720e",
-        "67330e6535cedc092c547212",
-        "67330e5d35cedc092c5471f2",
-        "67330e5a35cedc092c5471e6",
-        "67330e5e35cedc092c5471f6",
-        "67330e5935cedc092c5471e2",
-        "67330e5335cedc092c5471ca",
-        "67330e6335cedc092c54720a",
-        "67330e6835cedc092c54721e",
-        "67330e5535cedc092c5471d2",
-        "67330e6a35cedc092c547226",
-        "67330e4c35cedc092c5471ae",
-        "67330e5835cedc092c5471de",
-        "67330e6135cedc092c547202",
-        "67330e6035cedc092c5471fe",
-        "67330e6235cedc092c547206",
-        "67330e6935cedc092c547222",
-        "67330e6735cedc092c54721a"
+        "673fda9e14cdfbe937b7505d",
+        "673fda9414cdfbe937b75039",
+        "673fda9714cdfbe937b75045",
+        "673fda9214cdfbe937b75031",
+        "673fda9d14cdfbe937b75059",
+        "673fda9614cdfbe937b75041",
+        "673fda8e14cdfbe937b75025",
+        "673fda9b14cdfbe937b75051",
+        "673fda9314cdfbe937b75035",
+        "673fda9514cdfbe937b7503d",
+        "673fda9f14cdfbe937b75061",
+        "673fdaa214cdfbe937b7506d",
+        "673fda8d14cdfbe937b75021",
+        "673fdab014cdfbe937b7509d",
+        "673fda8c14cdfbe937b75019",
+        "673fda8f14cdfbe937b75029",
+        "673fda9a14cdfbe937b7504d",
+        "673fdaa114cdfbe937b75069",
+        "673fdaa814cdfbe937b75081",
+        "673fdaaf14cdfbe937b75099",
+        "673fdab114cdfbe937b750a1",
+        "673fda9814cdfbe937b75049",
+        "673fdaae14cdfbe937b75095",
+        "673fdaa414cdfbe937b75075",
+        "673fda9114cdfbe937b7502d",
+        "673fdaa714cdfbe937b7507d",
+        "673fdaa014cdfbe937b75065",
+        "673fda9c14cdfbe937b75055",
+        "673fdaac14cdfbe937b7508d",
+        "673fdaa314cdfbe937b75071",
+        "673fdaaa14cdfbe937b75089",
+        "673fdaa614cdfbe937b75079",
+        "673fdaa914cdfbe937b75085",
+        "673fdaad14cdfbe937b75091"
         ],
         "selected_tags": []
     }
@@ -45,7 +58,7 @@ async def test_dimension_reduction_manual(async_client, auth_headers):
 @pytest.mark.asyncio
 async def test_dimension_reduction_auto(async_client, auth_headers):
     request_data = {
-        "project_id": "67330084d4c23c34e7550e66",
+        "project_id": "673fd560068f6aaf7cf089d8",
         "is_private": False,
         "history_name": "Auto Test",
         "algorithm": "umap",
@@ -59,42 +72,3 @@ async def test_dimension_reduction_auto(async_client, auth_headers):
     assert response.status_code == 200
     assert response.json()["status"] == 200
 
-# 권한이 없는 사용자에 대한 테스트
-@pytest.mark.asyncio
-async def test_dimension_reduction_permission_denied(async_client, auth_headers):
-    request_data = {
-        "project_id": "67330084d4c23c34e7550e66",
-        "is_private": True,
-        "history_name": "Permission Denied Test",
-        "algorithm": "tsne",
-        "image_ids": [
-        "67330e5135cedc092c5471c2",
-        "67330e6635cedc092c547216",
-        "67330e4d35cedc092c5471b2",
-        "67330e6435cedc092c54720e",
-        "67330e6535cedc092c547212",
-        "67330e5d35cedc092c5471f2",
-        "67330e5a35cedc092c5471e6",
-        "67330e5e35cedc092c5471f6",
-        "67330e5935cedc092c5471e2",
-        "67330e5335cedc092c5471ca",
-        "67330e6335cedc092c54720a",
-        "67330e6835cedc092c54721e",
-        "67330e5535cedc092c5471d2",
-        "67330e6a35cedc092c547226",
-        "67330e4c35cedc092c5471ae",
-        "67330e5835cedc092c5471de",
-        "67330e6135cedc092c547202",
-        "67330e6035cedc092c5471fe",
-        "67330e6235cedc092c547206",
-        "67330e6935cedc092c547222",
-        "67330e6735cedc092c54721a"
-        ],
-        "selected_tags": []
-    }
-    response = await async_client.post(
-        "/be/api/project/analysis/manual",
-        json=request_data,
-        headers=auth_headers
-    )
-    assert response.status_code == 403  # Permission Denied

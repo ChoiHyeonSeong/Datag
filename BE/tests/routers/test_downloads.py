@@ -4,7 +4,7 @@ import pytest
 @pytest.mark.asyncio
 async def test_download_success(async_real_client, auth_headers):
     request_data = {
-        "image_list": ["6737053874be3f50d27e2ce1"]
+        "image_list": ["673fda8c14cdfbe937b75019"]
     }
     response = await async_real_client.post("be/api/image/download", json=request_data, headers=auth_headers)
     print(response.json())
@@ -16,7 +16,7 @@ async def test_download_success(async_real_client, auth_headers):
 @pytest.mark.asyncio
 async def test_download_unauthorized(async_real_client):
     request_data = {
-        "image_list": ["6739ee9adb16f3fd5c90a3f4"]
+        "image_list": ["673fda8c14cdfbe937b75019"]
     }
     response = await async_real_client.post("be/api/image/download", json=request_data)
     

@@ -28,7 +28,7 @@ async def test_mongo_db():
     client = AsyncIOMotorClient(os.getenv("TEST_MONGO_URL"))
     db = client["testDB"]
     yield db
-    client.drop_database("testDB")
+    # client.drop_database("testDB")
     client.close()
 
 @pytest.fixture(scope="module")

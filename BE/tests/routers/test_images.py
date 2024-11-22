@@ -5,7 +5,7 @@ import pytest
 @pytest.mark.asyncio
 async def test_get_image_detail(async_client, auth_headers):
     request_data = {
-        "image_id": "67330084d4c23c34e7550e01",
+        "image_id": "673fda8c14cdfbe937b75019",
         "conditions": []
     }
     response = await async_client.post(

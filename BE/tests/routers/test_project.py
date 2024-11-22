@@ -5,8 +5,8 @@ from httpx import AsyncClient
 async def test_create_project_endpoint(async_client, auth_headers):
     data = {
         "project_name": "API Test Project",
-        "project_model_task": "classification",
-        "project_model_name": "mobilenet",
+        "project_model_task": "cls",
+        "project_model_name": "efficientnet_v2_s",
         "description": "Testing project creation via API.",
         "accesscontrol": {
             "view_users": ["user1", "user2"],
