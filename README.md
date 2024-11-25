@@ -203,6 +203,8 @@ AI Server를 분리하여 Classification 모델 3개, Object Detection 모델 3�
 <br>
 <br>
 
+# 실행 환경 구축 및 실행 방법
+[포팅 메뉴얼](exec/README.md)
 # MariaDB 세팅
 
 - table생성 외 세팅은 없습니다.
