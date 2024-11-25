@@ -17,7 +17,7 @@ const initialState: CreateProjectType = {
     users: {},
     departments: {},
   },
-  is_private: true,
+  is_private: false,
 };
 
 const projectSlice = createSlice({

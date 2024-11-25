@@ -5,6 +5,7 @@ import Sidebar from "@/components/common/sidebar";
 import "react-toastify/dist/ReactToastify.css";
 import { ToastContainer } from "react-toastify";
 import { UserStoreReduxProvider } from "@/components/common/redux-provider";
+import TanstackQueryProvider from "@/components/provider/tanstack-query-provider";
 
 const pretendard = localFont({
   src: "./fonts/PretendardVariable.woff2",
@@ -33,16 +34,18 @@ export default function RootLayout({
     >
       <body id="root">
         <ThemeProvider attribute="class">
-          <UserStoreReduxProvider>
-            <div className="min-h-screen min-w-screen flex bg-gray-50 dark:bg-gray-900">
-              <Sidebar />
-              <main className="flex-1">
-                <div>{children}</div>
-              </main>
-            </div>
+          <TanstackQueryProvider>
+            <UserStoreReduxProvider>
+              <div className="min-h-screen min-w-screen flex bg-gray-50 dark:bg-gray-900">
+                <Sidebar />
+                <main className="flex-1">
+                  <div>{children}</div>
+                </main>
+              </div>
 
-            <ToastContainer />
-          </UserStoreReduxProvider>
+              <ToastContainer />
+            </UserStoreReduxProvider>
+          </TanstackQueryProvider>
         </ThemeProvider>
 
         <div id="modal-root"></div>
