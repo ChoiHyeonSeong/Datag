@@ -19,10 +19,11 @@ import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { customFetch } from "@/app/actions/customFetch";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 
 const Step4 = ({ handleMove }: StepProps) => {
   const router = useRouter();
-
+  const queryClient = useQueryClient();
   useEffect(() => {
     router.prefetch("/project");
   }, [router]);
@@ -92,7 +93,11 @@ const Step4 = ({ handleMove }: StepProps) => {
         setErrorMessage("프로젝트 생성에 실패했습니다.");
       } else {
         const projectId = response.data.data;
+
         console.log(projectId);
+        queryClient.invalidateQueries({
+          queryKey: ["projects"],
+        });
         router.replace(`/project/${projectId}/image_manage`);
       }
     } catch (error) {
@@ -143,7 +148,7 @@ const Step4 = ({ handleMove }: StepProps) => {
           </CardBody>
         </Card>
       </section>
-      {is_private && (
+      {!is_private && (
         <section className="w-full flex flex-col items-center mt-8">
           <Tabs
             aria-label="private allow tabs"

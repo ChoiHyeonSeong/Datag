@@ -7,7 +7,7 @@ interface LayoutProps {
 
 const Layout = ({ sideHistory, children }: LayoutProps) => {
   return (
-    <div className="w-full h-screen flex flex-col dark:bg-gray-900 min-h-[30rem]">
+    <div className="w-full min-h-screen flex flex-col dark:bg-gray-900 ">
       {/* Main Content */}
       <div className="flex flex-row flex-grow p-6 gap-6">
         {/* Sidebar */}

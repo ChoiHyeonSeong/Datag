@@ -4,47 +4,32 @@ import { customFetch } from "@/app/actions/customFetch";
 import { DefaultPaginationType, PaginationType } from "@/types/default";
 import { ProjectType } from "@/types/projectType";
 import { Pagination, Spinner } from "@nextui-org/react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import ProjectItem from "./project-item";
 
 const ProjectList = () => {
-  const queryclient = useQueryClient();
   const searchParams = useSearchParams();
-  const [page, setPage] = useState<number>(
-    parseInt(searchParams.get("page") || "1")
-  );
-  const [model_name, setModelName] = useState<string | null>(
-    searchParams.get("model_name")
-  );
+  const pathname = usePathname();
+  const router = useRouter();
 
-  const handlePageChange = (newPage: number) => {
-    setPage(newPage);
-    queryclient.invalidateQueries({
-      queryKey: ["projects"],
-    });
-  };
+  const currentPage = parseInt(searchParams.get("page") || "1");
+  const currentModelName = searchParams.get("model_name");
 
-  const searchParams_Input = new URLSearchParams({
-    page: page.toString(),
-  });
-  if (model_name) searchParams_Input.set("model_name", model_name);
-
-  const { data, isPending, isLoading, isError, error } = useQuery<
+  const { data, isPending, isLoading, isError } = useQuery<
     PaginationType<ProjectType[]>,
     string,
     PaginationType<ProjectType[]>,
-    [string]
+    [string, number, string | null]
   >({
-    staleTime: 1000 * 60 * 10,
-    gcTime: 1000 * 60 * 60,
-    queryKey: ["projects"],
+    queryKey: ["projects", currentPage, currentModelName],
     queryFn: async () => {
       const response = await customFetch<DefaultPaginationType<ProjectType[]>>({
-        endpoint: `/project/list`,
+        endpoint: `/project/list?page=${currentPage}${
+          currentModelName ? `&model_name=${currentModelName}` : ""
+        }`,
         method: "GET",
-        searchParams: searchParams_Input,
       });
 
       if (!response.data) {
@@ -61,6 +46,13 @@ const ProjectList = () => {
     },
   });
 
+  const handlePageChange = (newPage: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", newPage.toString());
+    if (currentModelName) params.set("model_name", currentModelName);
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
   if (isPending || isLoading)
     return (
       <div>
@@ -71,8 +63,8 @@ const ProjectList = () => {
   if (!data || !data.data) return <div>No projects found</div>;
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-between  pb-2">
-      <div className="w-full overflow-y-auto flex flex-col items-center justify-center">
+    <div className="w-full h-full flex flex-col items-center justify-between pb-2 overflow-y-auto">
+      <div className="w-full flex flex-col items-center justify-center">
         {data.data.map((project) => (
           <ProjectItem key={project.project_id} project={project} />
         ))}
@@ -83,7 +75,7 @@ const ProjectList = () => {
           size="lg"
           onChange={handlePageChange}
           total={data.total_pages}
-          initialPage={page}
+          initialPage={currentPage}
         />
       </div>
     </div>
