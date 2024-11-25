@@ -238,24 +238,24 @@ CREATE TABLE `departments` (
 
 ## MariaDB
 
-[MariaDB](exec\S108.sql)
+[MariaDB](exec/S108.sql)
 
 ## MongoDB
 
-- [project](exec\S11P31S108.projects.json)
-- [feature](exec\S11P31S108.features.json)
-- [metadata](exec\S11P31S108.metadata.json)
-- [images](exec\S11P31S108.images.json)
-- [history](exec\S11P31S108.histories.json)
-- [imagelabel](exec\S11P31S108.imageLabels.json)
-- [image_models](exec\S11P31S108.imageModels.json)
-- [image_permissions](exec\S11P31S108.imagePermissions.json)
-- [project_history](exec\S11P31S108.projectHistories.json)
-- [project_image](exec\S11P31S108.projectImages.json)
-- [project_permission](exec\S11P31S108.projectPermissions.json)
-- [tag_image](exec\S11P31S108.tagImages.json)
-- [upload_batches](exec\S11P31S108.uploadBatches.json)
-- [user_upload_batches](exec\S11P31S108.userUploadBatches.json)
+- [project](exec/S11P31S108.projects.json)
+- [feature](exec/S11P31S108.features.json)
+- [metadata](exec/S11P31S108.metadata.json)
+- [images](exec/S11P31S108.images.json)
+- [history](exec/S11P31S108.histories.json)
+- [imagelabel](exec/S11P31S108.imageLabels.json)
+- [image_models](exec/S11P31S108.imageModels.json)
+- [image_permissions](exec/S11P31S108.imagePermissions.json)
+- [project_history](exec/S11P31S108.projectHistories.json)
+- [project_image](exec/S11P31S108.projectImages.json)
+- [project_permission](exec/S11P31S108.projectPermissions.json)
+- [tag_image](exec/S11P31S108.tagImages.json)
+- [upload_batches](exec/S11P31S108.uploadBatches.json)
+- [user_upload_batches](exec/S11P31S108.userUploadBatches.json)
 
 # Back End(API) 실행 방법
 
@@ -303,7 +303,7 @@ CREATE TABLE `departments` (
   python main.py
   ```
 - python명령어를 통해 8081 port로 실행(port 충돌 방지)
-- [DL서버 호출](BE\app\services\project\upload_service.py)코드 수정 필요(193줄)
+- [DL서버 호출](BE/app/services/project/upload_service.py)코드 수정 필요(193줄)
 
 # FE local 실행 방법
 
@@ -363,6 +363,6 @@ TEST_MONGO_URL=test_mongodb_url
 
 # requirement 파일
 
-[BE requirement.txt(API 서버)](BE\app\requirements.txt)
+[BE requirement.txt(API 서버)](BE/app/requirements.txt)
 
-[DL requirement.txt(Deeplearning 서버)](DL\app\requirements.txt)
+[DL requirement.txt(Deeplearning 서버)](DL/app/requirements.txt)
