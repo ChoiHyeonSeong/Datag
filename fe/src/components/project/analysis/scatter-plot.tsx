@@ -153,7 +153,7 @@ const ScatterPlot = ({
           position: "bottom",
           title: {
             display: true,
-            text: `Feature ${selectedIndices.x}`,
+            text: `Dimension ${selectedIndices.x}`,
             color: currentTheme === "dark" ? "#fff" : "#000",
             font: {
               size: 14,
@@ -182,7 +182,7 @@ const ScatterPlot = ({
           position: "left",
           title: {
             display: true,
-            text: `Feature ${selectedIndices.y}`,
+            text: `Dimension ${selectedIndices.y}`,
             color: currentTheme === "dark" ? "#fff" : "#000",
             font: {
               size: 14,

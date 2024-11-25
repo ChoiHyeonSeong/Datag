@@ -4,12 +4,14 @@ import React, { useEffect, useState } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 
 import { Button, Select, SelectItem, Spinner } from "@nextui-org/react";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface SelectOptionsProps {
   model_list: string[];
 }
 
 const SelectOptions = ({ model_list }: SelectOptionsProps) => {
+  const queryClient = useQueryClient();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -40,6 +42,9 @@ const SelectOptions = ({ model_list }: SelectOptionsProps) => {
 
     const query = params.toString();
     router.push(`${pathname}${query ? `?${query}` : ""}`);
+    queryClient.invalidateQueries({
+      queryKey: ["projects"],
+    });
   };
 
   const handleModelChange = (keys: Set<string>) => {
@@ -49,6 +54,9 @@ const SelectOptions = ({ model_list }: SelectOptionsProps) => {
   const reset = () => {
     setSelectModel(new Set([]));
     router.push(pathname);
+    queryClient.invalidateQueries({
+      queryKey: ["projects"],
+    });
   };
 
   return (
@@ -64,7 +72,9 @@ const SelectOptions = ({ model_list }: SelectOptionsProps) => {
             className="w-[200px]"
             label="Model"
             placeholder="Select a model"
-            onSelectionChange={(keys) => handleModelChange(keys as Set<string>)}
+            onSelectionChange={(keys) => {
+              handleModelChange(keys as Set<string>);
+            }}
           >
             {model_list.map((model) => (
               <SelectItem key={model} value={model}>
