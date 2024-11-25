@@ -9,8 +9,6 @@ import {
 } from "@/lib/constants/token-duration";
 import { DefaultResponseType } from "@/types/default";
 import { customFetch } from "./customFetch";
-import { redirect } from "next/dist/server/api-utils";
-import { url } from "inspector";
 
 export const check_auth = async (formData: FormData) => {
   console.log("check_auth");
@@ -26,6 +24,7 @@ export const check_auth = async (formData: FormData) => {
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/login`,
       {
+        credentials: "same-origin",
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -61,16 +60,20 @@ export const check_auth = async (formData: FormData) => {
       name: "refreshToken",
       value: data.data.refresh_token,
       httpOnly: true,
-      path: process.env.NEXT_PUBLIC_FRONTEND_URL,
+      path: "/",
       maxAge: refreshTokenDuration,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
     });
 
     cookieStore.set({
       name: "accessToken",
       value: data.data.access_token,
       httpOnly: true,
-      path: process.env.NEXT_PUBLIC_FRONTEND_URL,
+      path: "/",
       maxAge: accessTokenDuration,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
     });
 
     console.log();
@@ -126,6 +129,7 @@ export const refreshAccessToken = async (
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/refresh`,
       {
+        credentials: "include",
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -139,6 +143,8 @@ export const refreshAccessToken = async (
     console.log("Refresh 결과", data.data);
 
     if (!data?.data) {
+      cookies().delete("refreshToken");
+      cookies().delete("accessToken");
       throw new Error("Failed to refresh token");
     }
 
@@ -146,14 +152,20 @@ export const refreshAccessToken = async (
       name: "refreshToken",
       value: data.data.refresh_token,
       httpOnly: true,
+      path: "/",
       maxAge: refreshTokenDuration,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
     });
 
     cookies().set({
       name: "accessToken",
       value: data.data.access_token,
       httpOnly: true,
+      path: "/",
       maxAge: accessTokenDuration,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
     });
 
     return data.data.access_token;

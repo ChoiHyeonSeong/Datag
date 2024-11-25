@@ -108,8 +108,8 @@ export function MainAnalysis({ selectedHistory }: MainAnalysisProps) {
         : 0;
 
     const uniqueImageIds = response.data.results?.filter(
-        (item, index, self) => 
-            index === self.findIndex(t => t.imageId === item.imageId)
+      (item, index, self) =>
+        index === self.findIndex((t) => t.imageId === item.imageId)
     );
 
     setInitialValues({
@@ -120,7 +120,7 @@ export function MainAnalysis({ selectedHistory }: MainAnalysisProps) {
 
   const featureOptions = Array.from({ length: 10 }, (_, i) => ({
     value: i.toString(),
-    label: `Feature ${i}`,
+    label: `Dimension ${i}`,
   }));
 
   const handleIndexChange = (axis: "x" | "y", value: string) => {
@@ -298,7 +298,7 @@ export function MainAnalysis({ selectedHistory }: MainAnalysisProps) {
               </div>
               <div className="mt-4 flex gap-4">
                 <Select
-                  label="X축 Feature"
+                  label="X축 Dimension"
                   selectedKeys={[selectedIndices.x.toString()]}
                   onChange={(e) => handleIndexChange("x", e.target.value)}
                   classNames={{
@@ -320,7 +320,7 @@ export function MainAnalysis({ selectedHistory }: MainAnalysisProps) {
                   ))}
                 </Select>
                 <Select
-                  label="Y축 Feature"
+                  label="Y축 Dimension"
                   selectedKeys={[selectedIndices.y.toString()]}
                   onChange={(e) => handleIndexChange("y", e.target.value)}
                   classNames={{
